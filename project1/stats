@@ -1,0 +1,27 @@
+#!/bin/sh
+
+
+rows ()
+{
+    row=1
+    while read line
+    do
+        tmp=$$"row"$row
+        touch $tmp
+        echo $line > $tmp
+        sort $tmp
+        sum=0
+        count=0
+        for i in $line
+        do
+            sum=`expr $sum + $i`
+            count=`expr $count + 1`
+        done
+        echo `expr $sum / $count`
+        row=`expr $row + 1`
+    done < test_file
+}
+
+rows
+
+exit 0
