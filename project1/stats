@@ -8,8 +8,11 @@ rows ()
     do
         tmp=$$"row"$row
         touch $tmp
+        touch $tmp"_sorted"
         echo $line > $tmp
-        sort $tmp
+        # SORT FILE
+        sort $tmp > $tmp"_sorted"
+
         sum=0
         count=0
         for i in $line
