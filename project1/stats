@@ -1,30 +1,68 @@
 #!/bin/sh
 
-
-rows ()
+separate_rows ()
 {
+    if [ -z "$1" ]
+    then
+        echo "ERROR!"
+        exit 1
+    fi
+
+    # MAKE FILE LIST
+    FILE_LIST=
+
     row=1
     while read line
     do
         tmp=$$"row"$row
         touch $tmp
-        touch $tmp"_sorted"
-        echo $line > $tmp
-        # SORT FILE
-        sort $tmp > $tmp"_sorted"
 
-        sum=0
-        count=0
         for i in $line
         do
-            sum=`expr $sum + $i`
-            count=`expr $count + 1`
+            echo $i >> $tmp
         done
-        echo `expr $sum / $count`
         row=`expr $row + 1`
-    done < test_file
+    done < $1
 }
 
-rows
+separate_columns ()
+{
+    if [ -z "$1" ]
+    then
+        echo "ERROR!"
+    fi
+
+    # MAKE FILE LIST
+    FILE_LIST=
+
+    col=1
+    while read line
+    do
+        tmp=$$"col"$col
+        touch $tmp
+
+        counter=1
+        for i in $line
+        do
+            echo $i >> $$"col"$counter
+            counter=`expr $counter + 1`
+        done
+    done < $1
+}
+
+separate_rows "test_file2"
+# separate_columns "test_file2"
+
+
+# GENERAL ALGO
+
+# separate into files by row or col !!NEEDS ERROR HANDLING!!
+# sort files
+# calculate average for each file
+# calculate median for each file
+
+# clean up files
+
+# HANDLE ERROS
 
 exit 0
