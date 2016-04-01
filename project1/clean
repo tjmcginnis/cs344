@@ -2,3 +2,4 @@
 
 rm -f *col*
 rm -f *row*
+rm -f *FILE_LIST
