@@ -1,55 +1,41 @@
 #!/bin/sh
 
+AVERAGES=()
+MEDIANS=()
+FILE_LIST=$$"FILE_LIST"
+INPUT_FILE="test_file"
+
+touch $FILE_LIST
+
 separate_rows ()
 {
-    if [ -z "$1" ]
-    then
-        echo "ERROR!"
-        exit 1
-    fi
-
-    # MAKE FILE LIST
-    touch $$"FILE_LIST"
-
-    row=1
+    i=0
     while read line
     do
-        tmp=$$"row"$row
-        touch $tmp
-        echo $tmp >> $$"FILE_LIST"
+        i=`expr $i + 1`
 
-        for i in $line
-        do
-            echo $i >> $tmp
-        done
-        row=`expr $row + 1`
-    done < $1
+        file=$$"row"$i
+        touch $file
+        echo $file >> $FILE_LIST
+
+        printf "%s\n" $line > $file
+    done < $INPUT_FILE
 }
 
 separate_columns ()
 {
-    if [ -z "$1" ]
-    then
-        echo "ERROR!"
-    fi
+    # lines=(wc -l < $INPUT_FILE)
+    # words=(wc -w $INPUT_FILE)
+    first_col=$(cut -c1 $INPUT_FILE)
+    l=${#first_col}
 
-    # MAKE FILE LIST
-    FILE_LIST=()
-
-    col=1
-    while read line
+    for i in $(seq 1 2 $l)
     do
-        tmp=$$"col"$col
-        touch $tmp
-        echo $tmp >> $$"FILE_LIST"
-
-        counter=1
-        for i in $line
-        do
-            echo $i >> $$"col"$counter
-            counter=`expr $counter + 1`
-        done
-    done < $1
+        file=$$"col"$i
+        touch $file
+        echo $file >> $FILE_LIST
+        cat $INPUT_FILE | cut -c$i $1 > $file
+    done
 }
 
 sort_files()
@@ -60,17 +46,34 @@ sort_files()
     done < $$"FILE_LIST"
 }
 
+print_results_rows()
+{
+    echo Average
+    for i in "${AVERAGES[@]}"
+    do
+        echo $i
+    done
+}
+
+print_results_cols()
+{
+    echo Averages:
+    printf "%s\t" "${AVERAGES[@]}" > $$"results"
+    echo "" >> $$"results"
+    cat $$"results"
+}
+
 # get command line args
+
 # separate into files by row or col !!NEEDS ERROR HANDLING!!
-separate_rows "test_file2"
-# separate_columns "test_file2"
+separate_rows
+# separate_columns
 
 # sort files !!NEEDS ERROR HANDLING!!
 sort_files
 
 # calculate average for each file !!NEEDS ERROR HANDLING!!
 # !!ENSURE PROPER ROUNDING!!
-averages=()
 while read line
 do
     sum=0
@@ -80,8 +83,12 @@ do
         (( sum += num ))
         (( counter += 1 ))
     done < $line
-    echo `expr $sum / $counter`
-done < $$"FILE_LIST"
+    average=(`expr $sum / $counter`)
+    AVERAGES+=( $average )
+done < $FILE_LIST 
+# print_results_rows
+# print_results_cols
+
 # calculate median for each file !!NEEDS ERROR HANDLING!! !!MAKE SURE TO DO
 # PROPER ROUNDING!!
 medians=()
