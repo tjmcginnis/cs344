@@ -3,11 +3,10 @@
 AVERAGES=()
 MEDIANS=()
 FILE_LIST=$$"FILE_LIST"
-INPUT_FILE="test_file2"
+INPUT_FILE=$$"infile"
 COL_FILE_BASE=$$"col"
 ROW_FILE_BASE=$$"row"
 
-touch $FILE_LIST
 
 separate_rows ()
 {
@@ -28,14 +27,17 @@ separate_columns ()
 {
     ROWS=$(wc -l < $INPUT_FILE)
     WORDS=$(wc -w < $INPUT_FILE)
-    COLS=$(( 2 * ($WORDS / $ROWS) ))
+    COLS=$(( $WORDS / $ROWS ))
 
-    for COL in $(seq 1 2 $COLS)
+    for COL in $(seq 1 $COLS)
     do
         FILE=$COL_FILE_BASE$COL
         touch $FILE
         echo $FILE >> $FILE_LIST
-        cat $INPUT_FILE | cut -c$COL > $FILE
+        while read LINE
+        do
+            echo $LINE | cut -d" " -f $COL >> $FILE
+        done < $INPUT_FILE
     done
 }
 
@@ -98,6 +100,7 @@ clean_up()
     rm -f *row*
     rm -f *col*
     rm -f $$"FILE_LIST"
+    rm -f *infile
 }
 
 common_operations()
@@ -108,41 +111,43 @@ common_operations()
 }
 
 # get command line args
+if [ "$#" = "1" ]
+then
+    cat > $INPUT_FILE
+elif [ "$#" = "2" ]
+then
+    INPUT_FILE=$2
+fi
+
+if [ ! -r $INPUT_FILE ]
+then
+    echo "stats: cannot read ${INPUT_FILE}"
+    exit 1
+fi
 
 if [[ $1 == -r* ]];
 then
     # separate files into rows **NEEDS ERROR HANDLING**
     separate_rows
 
-    common_operations
+    common_operations # ** NEEDS ERROR HANDLING **
 
-    print_results_rows
+    print_results_rows # ** NEEDS ERROR HANDLING **
 elif [[ $1 == -c* ]];
 then
-    # ***DOESNT WORK WITH DOUBLE DIGIT OR TRIPLE DIGIT NUMBERS***
-
     # separate files into cols ** NEEDS ERROR HANDLING**
     separate_columns
 
-    common_operations
+    common_operations # ** NEEDS ERROR HANDLING **
 
-    print_results_cols
+    print_results_cols # ** NEEDS ERROR HANDLING **
+else
+    echo "Usage: stats {-rows|-cols} [file]"
+    exit 1
 fi
 
-# separate into files by row or col !!NEEDS ERROR HANDLING!!
-#separate_rows
-# separate_columns
-# sort files !!NEEDS ERROR HANDLING!!
-# sort_files
-# calculate average for each file !!NEEDS ERROR HANDLING!!
-# calculate_averages
-# calculate median for each file !!NEEDS ERROR HANDLING!!
-# calculate_medians
-# print_results_rows
-# print_results_cols
-
 # clean up files
-# clean_up
+clean_up
 
 # HANDLE ERRORS
 # NEED COMMENTS
