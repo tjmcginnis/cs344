@@ -8,30 +8,37 @@ COL_FILE_BASE=$$"col"
 ROW_FILE_BASE=$$"row"
 
 
-separate_rows ()
-{
-    ROW=0
+separate_rows () {
+    local ROW=0
+
+    if [ ! -e $INPUT_FILE ]
+    then
+        return 1
+    fi
+
     while read line
     do
-        ROW=$(( $ROW + 1 ))
+        # increment row count -- for temporary file naming
+        local ROW=$(( $ROW + 1 ))
 
-        FILE=$ROW_FILE_BASE$ROW
-        touch $FILE
+        # create temporary file to store row
+        local FILE=$ROW_FILE_BASE$ROW
+        # add temporary file name to file list
         echo $FILE >> $FILE_LIST
 
+        # write row, newline separated, to temporary file
         printf "%s\n" $line > $FILE
     done < $INPUT_FILE
 }
 
-separate_columns ()
-{
-    ROWS=$(wc -l < $INPUT_FILE)
-    WORDS=$(wc -w < $INPUT_FILE)
-    COLS=$(( $WORDS / $ROWS ))
+separate_columns () {
+    local ROWS=$(wc -l < $INPUT_FILE)
+    local WORDS=$(wc -w < $INPUT_FILE)
+    local COLS=$(( $WORDS / $ROWS ))
 
     for COL in $(seq 1 $COLS)
     do
-        FILE=$COL_FILE_BASE$COL
+        local FILE=$COL_FILE_BASE$COL
         touch $FILE
         echo $FILE >> $FILE_LIST
         while read LINE
@@ -41,52 +48,47 @@ separate_columns ()
     done
 }
 
-sort_files()
-{
+sort_files() {
     while read line
     do
         sort $line -n -o $line
     done < $FILE_LIST
 }
 
-calculate_averages()
-{
+calculate_averages() {
     while read line
     do
-        SUM=0
-        COUNT=0
+        local SUM=0
+        local COUNT=0
         while read -r num
         do
             (( SUM += num ))
             (( COUNT += 1 ))
         done < $line
-        AVERAGE=$( echo $SUM / $COUNT + 0.5 | bc -l )
+        local AVERAGE=$( echo $SUM / $COUNT + 0.5 | bc -l )
         AVERAGES+=(${AVERAGE%.*})
     done < $FILE_LIST
 }
 
-calculate_medians()
-{
+calculate_medians() {
     while read line
     do
-        NUMS=$(wc -l < $line)
-        MEDIAN_INDEX=$(( ($NUMS / 2) + 1 ))
+        local NUMS=$(wc -l < $line)
+        local MEDIAN_INDEX=$(( ($NUMS / 2) + 1 ))
         MEDIANS+=($( head -$MEDIAN_INDEX $line | tail -1 ))
     done < $FILE_LIST
 }
 
-print_results_rows()
-{
+print_results_rows() {
     printf "Average\tMedian\n"
-    LENGTH=${#AVERAGES[@]}
+   # LENGTH=${#AVERAGES[@]}
     for i in "${!AVERAGES[@]}"
     do
         printf '%s\t%s\n' ${AVERAGES[$i]} ${MEDIANS[$i]}
     done
 }
 
-print_results_cols()
-{
+print_results_cols() {
     echo Averages:
     printf "%s\t" "${AVERAGES[@]}"
     printf "\n"
@@ -95,16 +97,14 @@ print_results_cols()
     printf "\n"
 }
 
-clean_up()
-{
+clean_up() {
     rm -f *row*
     rm -f *col*
     rm -f $$"FILE_LIST"
     rm -f *infile
 }
 
-common_operations()
-{
+common_operations() {
     sort_files
     calculate_averages
     calculate_medians
@@ -122,6 +122,7 @@ fi
 if [ ! -r $INPUT_FILE ]
 then
     echo "stats: cannot read ${INPUT_FILE}"
+    clean_up
     exit 1
 fi
 
@@ -143,6 +144,7 @@ then
     print_results_cols # ** NEEDS ERROR HANDLING **
 else
     echo "Usage: stats {-rows|-cols} [file]"
+    clean_up
     exit 1
 fi
 
