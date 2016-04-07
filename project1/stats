@@ -32,22 +32,26 @@ separate_rows () {
 }
 
 separate_columns () {
-    local ROWS=$(wc -l < $INPUT_FILE)
-    local WORDS=$(wc -w < $INPUT_FILE)
-    local COLS=$(( $WORDS / $ROWS ))
+    local ROWS=$(wc -l < $INPUT_FILE)   # number of rows in file
+    local WORDS=$(wc -w < $INPUT_FILE)  # number of numbers in file
+    local COLS=$(( $WORDS / $ROWS ))    # calculate number of columns in file
 
     for COL in $(seq 1 $COLS)
     do
+        # create temporary file to store column
         local FILE=$COL_FILE_BASE$COL
-        touch $FILE
+        # add temporary file name to file list
         echo $FILE >> $FILE_LIST
+
         while read LINE
         do
+            # write column to temporary file
             echo $LINE | cut -d" " -f $COL >> $FILE
         done < $INPUT_FILE
     done
 }
 
+# sort each file in $FILE_LIST from least to greatest
 sort_files() {
     while read line
     do
@@ -55,6 +59,7 @@ sort_files() {
     done < $FILE_LIST
 }
 
+# calculate average...
 calculate_averages() {
     while read line
     do
