@@ -5,3 +5,4 @@ rm -f *row*
 rm -f *FILE_LIST
 rm -f *results
 rm -f *infile
+rm -f stats_tmp*

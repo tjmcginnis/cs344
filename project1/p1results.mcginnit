@@ -3,12 +3,12 @@ Creating file1 file2 file3 file4 file5
 
 
 total 40
--rw-rw----. 1 mcginnit upg53994  259 Apr  7 14:50 file1
--rw-rw----. 1 mcginnit upg53994   49 Apr  7 14:50 file2
--rw-rw----. 1 mcginnit upg53994    3 Apr  7 14:50 file3
--rw-rw----. 1 mcginnit upg53994    0 Apr  7 14:50 file4
--rw-rw----. 1 mcginnit upg53994 5831 Apr  7 14:50 file5
--rwxrwx---. 1 mcginnit upg53994 2810 Apr  7 14:50 stats
+-rw-rw----. 1 mcginnit upg53994  259 Apr  9 15:30 file1
+-rw-rw----. 1 mcginnit upg53994   49 Apr  9 15:30 file2
+-rw-rw----. 1 mcginnit upg53994    3 Apr  9 15:30 file3
+-rw-rw----. 1 mcginnit upg53994    0 Apr  9 15:30 file4
+-rw-rw----. 1 mcginnit upg53994 5831 Apr  9 15:30 file5
+-rwxrwx---. 1 mcginnit upg53994 3044 Apr  9 15:30 stats
 
 
 --------------------------------------------------------------------------
@@ -95,16 +95,13 @@ Medians:
 --------------------------------------------------------------------------
 File 4 Statistics by Rows: lose 3 points for error or any number
 
-./stats: line 48: 19812FILE_LIST: No such file or directory
-./stats: line 55: 19812FILE_LIST: No such file or directory
-./stats: line 70: 19812FILE_LIST: No such file or directory
-Average	Median
+Usage: stats {-rows|-cols} [file]
 
 
 --------------------------------------------------------------------------
 File 4 Statistics by Cols: lose 3 points for an error not from script
 
-./stats: line 34: 0 / 0 : division by 0 (error token is "0 ")
+Usage: stats {-rows|-cols} [file]
 
 
 --------------------------------------------------------------------------
@@ -186,33 +183,33 @@ Error Message:
 Bad Syntax
 
 Too Few Arguments: 1 point for usage text, 2 points for exit value 1
-stats: cannot read 22247infile
 Exit Value: 1
 Error Message:
+./stats: Cannot read stats_input22197
 
 Too Many Arguments: 1 point for usage text, 2 points for exit value 1
-stats: cannot read 22249infile
 Exit Value: 1
 Error Message:
+./stats: Cannot read stats_input22203
 
 Wrong Format: 1 point for usage text, 2 points for exit value 1
-Usage: stats {-rows|-cols} [file]
 Exit Value: 1
 Error Message:
+Usage: stats {-rows|-cols} [file]
 
 Bad Option: 1 point for usage text, 2 points for exit value 1
-Usage: stats {-rows|-cols} [file]
 Exit Value: 1
 Error Message:
+Usage: stats {-rows|-cols} [file]
 
 
 --------------------------------------------------------------------------
 File Not Readable: 2 points for error msg, 2 points for program halting
 
 
-stats: cannot read file3
 Exit Value: 1
 Error Message:
+./stats: Cannot read file3
 
 
 
@@ -232,7 +229,6 @@ Simultaneous Runs
 
 
 Before Finishing
-22260FILE_LIST
 file1
 file2
 file3
@@ -245,9 +241,16 @@ stats
 
 
 Run 1 Output: 5 points for succesful run 1
-head: cannot open `22260row8' for reading: No such file or directory
-./stats: line 73: 22260row9: No such file or directory
-./stats: line 74: ( / 2) + 1 : syntax error: operand expected (error token is "/ 2) + 1 ")
+Average	Median
+94	93
+86	84
+74	81
+74	80
+80	81
+64	61
+55	54
+54	53
+100	100
 
 Run 2 Output: 5 points for succesful run 2
 Average	Median
@@ -275,7 +278,6 @@ Average	Median
 
 
 After Finishing: 5 points if no temp file
-22260FILE_LIST
 file1
 file2
 file3
@@ -288,356 +290,24 @@ Trap Signals
 
 
 Before Kill
-22260FILE_LIST
-22552FILE_LIST
-22552infile
-22552row1
-22552row10
-22552row100
-22552row101
-22552row102
-22552row103
-22552row104
-22552row105
-22552row106
-22552row107
-22552row108
-22552row109
-22552row11
-22552row110
-22552row111
-22552row112
-22552row113
-22552row114
-22552row115
-22552row116
-22552row117
-22552row118
-22552row119
-22552row12
-22552row120
-22552row121
-22552row122
-22552row123
-22552row124
-22552row125
-22552row126
-22552row127
-22552row128
-22552row129
-22552row13
-22552row130
-22552row131
-22552row132
-22552row133
-22552row134
-22552row135
-22552row136
-22552row137
-22552row138
-22552row139
-22552row14
-22552row140
-22552row141
-22552row142
-22552row143
-22552row144
-22552row145
-22552row146
-22552row147
-22552row148
-22552row149
-22552row15
-22552row150
-22552row151
-22552row152
-22552row153
-22552row154
-22552row155
-22552row156
-22552row157
-22552row158
-22552row159
-22552row16
-22552row160
-22552row161
-22552row17
-22552row18
-22552row19
-22552row2
-22552row20
-22552row21
-22552row22
-22552row23
-22552row24
-22552row25
-22552row26
-22552row27
-22552row28
-22552row29
-22552row3
-22552row30
-22552row31
-22552row32
-22552row33
-22552row34
-22552row35
-22552row36
-22552row37
-22552row38
-22552row39
-22552row4
-22552row40
-22552row41
-22552row42
-22552row43
-22552row44
-22552row45
-22552row46
-22552row47
-22552row48
-22552row49
-22552row5
-22552row50
-22552row51
-22552row52
-22552row53
-22552row54
-22552row55
-22552row56
-22552row57
-22552row58
-22552row59
-22552row6
-22552row60
-22552row61
-22552row62
-22552row63
-22552row64
-22552row65
-22552row66
-22552row67
-22552row68
-22552row69
-22552row7
-22552row70
-22552row71
-22552row72
-22552row73
-22552row74
-22552row75
-22552row76
-22552row77
-22552row78
-22552row79
-22552row8
-22552row80
-22552row81
-22552row82
-22552row83
-22552row84
-22552row85
-22552row86
-22552row87
-22552row88
-22552row89
-22552row9
-22552row90
-22552row91
-22552row92
-22552row93
-22552row94
-22552row95
-22552row96
-22552row97
-22552row98
-22552row99
 file1
 file2
 file3
 file4
 file5
 stats
+stats_input22647
+stats_tmp22647
 
   PID TTY          TIME CMD
-18266 pts/3    00:00:00 p1gradingscript
-21386 pts/3    00:00:00 tcsh
-21415 pts/3    00:00:00 bash
-22552 pts/3    00:00:00 stats
-22718 pts/3    00:00:00 ps
+18130 pts/18   00:00:00 p1gradingscript
+22647 pts/18   00:00:00 stats
+23968 pts/18   00:00:00 ps
+32178 pts/18   00:00:00 tcsh
+32223 pts/18   00:00:00 bash
 
 
 After Kill: 8 points if no temp files
-22260FILE_LIST
-22552FILE_LIST
-22552infile
-22552row1
-22552row10
-22552row100
-22552row101
-22552row102
-22552row103
-22552row104
-22552row105
-22552row106
-22552row107
-22552row108
-22552row109
-22552row11
-22552row110
-22552row111
-22552row112
-22552row113
-22552row114
-22552row115
-22552row116
-22552row117
-22552row118
-22552row119
-22552row12
-22552row120
-22552row121
-22552row122
-22552row123
-22552row124
-22552row125
-22552row126
-22552row127
-22552row128
-22552row129
-22552row13
-22552row130
-22552row131
-22552row132
-22552row133
-22552row134
-22552row135
-22552row136
-22552row137
-22552row138
-22552row139
-22552row14
-22552row140
-22552row141
-22552row142
-22552row143
-22552row144
-22552row145
-22552row146
-22552row147
-22552row148
-22552row149
-22552row15
-22552row150
-22552row151
-22552row152
-22552row153
-22552row154
-22552row155
-22552row156
-22552row157
-22552row158
-22552row159
-22552row16
-22552row160
-22552row161
-22552row162
-22552row163
-22552row164
-22552row165
-22552row166
-22552row167
-22552row17
-22552row18
-22552row19
-22552row2
-22552row20
-22552row21
-22552row22
-22552row23
-22552row24
-22552row25
-22552row26
-22552row27
-22552row28
-22552row29
-22552row3
-22552row30
-22552row31
-22552row32
-22552row33
-22552row34
-22552row35
-22552row36
-22552row37
-22552row38
-22552row39
-22552row4
-22552row40
-22552row41
-22552row42
-22552row43
-22552row44
-22552row45
-22552row46
-22552row47
-22552row48
-22552row49
-22552row5
-22552row50
-22552row51
-22552row52
-22552row53
-22552row54
-22552row55
-22552row56
-22552row57
-22552row58
-22552row59
-22552row6
-22552row60
-22552row61
-22552row62
-22552row63
-22552row64
-22552row65
-22552row66
-22552row67
-22552row68
-22552row69
-22552row7
-22552row70
-22552row71
-22552row72
-22552row73
-22552row74
-22552row75
-22552row76
-22552row77
-22552row78
-22552row79
-22552row8
-22552row80
-22552row81
-22552row82
-22552row83
-22552row84
-22552row85
-22552row86
-22552row87
-22552row88
-22552row89
-22552row9
-22552row90
-22552row91
-22552row92
-22552row93
-22552row94
-22552row95
-22552row96
-22552row97
-22552row98
-22552row99
 file1
 file2
 file3
@@ -646,9 +316,9 @@ file5
 stats
 
   PID TTY          TIME CMD
-18266 pts/3    00:00:00 p1gradingscript
-21386 pts/3    00:00:00 tcsh
-21415 pts/3    00:00:00 bash
-22734 pts/3    00:00:00 ps
+18130 pts/18   00:00:00 p1gradingscript
+24010 pts/18   00:00:00 ps
+32178 pts/18   00:00:00 tcsh
+32223 pts/18   00:00:00 bash
 
 
