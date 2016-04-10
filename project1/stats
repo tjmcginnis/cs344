@@ -3,8 +3,10 @@
 INPUT_FILE="stats_input$$"
 TMP_FILE="stats_tmp$$"
 
-function rows () {
-    printf "Average\tMedian\n"
+function stats_by_rows () {
+    local AVERAGES=()  # array for storing each column's average
+    local MEDIANS=()   # array for storing each column's medians
+
     while read line
     do
         # write row, newline separated, to temporary file
@@ -14,11 +16,25 @@ function rows () {
         sort $TMP_FILE -n -o $TMP_FILE
 
         # print average and median for row
-        printf '%s\t%s\n' $(calculate_average) $(calculate_median)
+        AVERAGES+=($(calculate_average))
+        MEDIANS+=($(calculate_median))
+    done < $INPUT_FILE
+
+    output_results_rows AVERAGES[@] MEDIANS[@]
+}
+
+function row_to_column () {
+    # arg: col number
+    COL=$1
+
+    while read LINE
+    do
+        # write column COL to temporary file
+        echo $LINE | cut -d" " -f $COL >> $TMP_FILE
     done < $INPUT_FILE
 }
 
-function columns () {
+function stats_by_columns () {
     local AVERAGES=()  # array for storing each column's average
     local MEDIANS=()   # array for storing each column's medians
 
@@ -36,11 +52,8 @@ function columns () {
     for COL in $(seq 1 $COLS)
     do
         $(> $TMP_FILE)  # empty $TMP_FILE
-        while read LINE
-        do
-            # write column COL to temporary file
-            echo $LINE | cut -d" " -f $COL >> $TMP_FILE
-        done < $INPUT_FILE
+
+        row_to_column $COL
 
         # sort temporary file from least to greatest
         sort $TMP_FILE -n -o $TMP_FILE
@@ -51,6 +64,24 @@ function columns () {
         # calculate median for column and add to MEDIAN array
         MEDIANS+=($(calculate_median))
     done
+
+    output_results_columns AVERAGES[@] MEDIANS[@]
+}
+
+function output_results_rows() {
+    declare -a local AVERAGES=("${!1}")
+    declare -a local MEDIANS=("${!2}")
+
+    printf "Average\tMedian\n"
+    for i in "${!AVERAGES[@]}"
+    do
+        printf '%s\t%s\n' "${AVERAGES[$i]}" "${MEDIANS[$i]}"
+    done
+}
+
+function output_results_columns() {
+    declare -a local AVERAGES=("${!1}")
+    declare -a local MEDIANS=("${!2}")
 
     # print results to standard output
     echo Averages:
@@ -132,11 +163,11 @@ fi
 if [[ $1 == -r* ]];
 then
     # calculate stats for rows
-    rows
+    stats_by_rows
 elif [[ $1 == -c* ]];
 then
     # calculate stats for columns
-    columns
+    stats_by_columns
 else
     # bad arguments
     usage

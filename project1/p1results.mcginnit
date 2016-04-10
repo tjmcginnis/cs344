@@ -3,12 +3,12 @@ Creating file1 file2 file3 file4 file5
 
 
 total 40
--rw-rw----. 1 mcginnit upg53994  259 Apr 10 11:30 file1
--rw-rw----. 1 mcginnit upg53994   49 Apr 10 11:30 file2
--rw-rw----. 1 mcginnit upg53994    3 Apr 10 11:30 file3
--rw-rw----. 1 mcginnit upg53994    0 Apr 10 11:30 file4
--rw-rw----. 1 mcginnit upg53994 5831 Apr 10 11:30 file5
--rwxrwx---. 1 mcginnit upg53994 2534 Apr 10 11:30 stats
+-rw-rw----. 1 mcginnit upg53994  259 Apr 10 13:27 file1
+-rw-rw----. 1 mcginnit upg53994   49 Apr 10 13:27 file2
+-rw-rw----. 1 mcginnit upg53994    3 Apr 10 13:27 file3
+-rw-rw----. 1 mcginnit upg53994    0 Apr 10 13:27 file4
+-rw-rw----. 1 mcginnit upg53994 5831 Apr 10 13:27 file5
+-rwxrwx---. 1 mcginnit upg53994 4390 Apr 10 13:27 stats
 
 
 --------------------------------------------------------------------------
@@ -299,15 +299,15 @@ file3
 file4
 file5
 stats
-stats_input4602
-stats_tmp4602
+stats_input11843
+stats_tmp11843
 
   PID TTY          TIME CMD
- 4602 pts/14   00:00:00 stats
- 5820 pts/14   00:00:00 ps
+ 7344 pts/14   00:00:00 p1gradingscript
+11843 pts/14   00:00:00 stats
+13134 pts/14   00:00:00 ps
 24608 pts/14   00:00:00 tcsh
 24633 pts/14   00:00:00 bash
-32224 pts/14   00:00:00 p1gradingscript
 
 
 After Kill: 8 points if no temp files
@@ -319,9 +319,9 @@ file5
 stats
 
   PID TTY          TIME CMD
- 5865 pts/14   00:00:00 ps
+ 7344 pts/14   00:00:00 p1gradingscript
+13176 pts/14   00:00:00 ps
 24608 pts/14   00:00:00 tcsh
 24633 pts/14   00:00:00 bash
-32224 pts/14   00:00:00 p1gradingscript
 
 
