@@ -3,12 +3,12 @@ Creating file1 file2 file3 file4 file5
 
 
 total 40
--rw-rw----. 1 mcginnit upg53994  259 Apr  9 15:30 file1
--rw-rw----. 1 mcginnit upg53994   49 Apr  9 15:30 file2
--rw-rw----. 1 mcginnit upg53994    3 Apr  9 15:30 file3
--rw-rw----. 1 mcginnit upg53994    0 Apr  9 15:30 file4
--rw-rw----. 1 mcginnit upg53994 5831 Apr  9 15:30 file5
--rwxrwx---. 1 mcginnit upg53994 3044 Apr  9 15:30 stats
+-rw-rw----. 1 mcginnit upg53994  259 Apr 10 11:30 file1
+-rw-rw----. 1 mcginnit upg53994   49 Apr 10 11:30 file2
+-rw-rw----. 1 mcginnit upg53994    3 Apr 10 11:30 file3
+-rw-rw----. 1 mcginnit upg53994    0 Apr 10 11:30 file4
+-rw-rw----. 1 mcginnit upg53994 5831 Apr 10 11:30 file5
+-rwxrwx---. 1 mcginnit upg53994 2534 Apr 10 11:30 stats
 
 
 --------------------------------------------------------------------------
@@ -95,13 +95,16 @@ Medians:
 --------------------------------------------------------------------------
 File 4 Statistics by Rows: lose 3 points for error or any number
 
-Usage: stats {-rows|-cols} [file]
+Average	Median
 
 
 --------------------------------------------------------------------------
 File 4 Statistics by Cols: lose 3 points for an error not from script
 
-Usage: stats {-rows|-cols} [file]
+Averages:
+
+Medians:
+
 
 
 --------------------------------------------------------------------------
@@ -185,12 +188,12 @@ Bad Syntax
 Too Few Arguments: 1 point for usage text, 2 points for exit value 1
 Exit Value: 1
 Error Message:
-./stats: Cannot read stats_input22197
+Usage: stats {-rows|-cols} [file]
 
 Too Many Arguments: 1 point for usage text, 2 points for exit value 1
 Exit Value: 1
 Error Message:
-./stats: Cannot read stats_input22203
+Usage: stats {-rows|-cols} [file]
 
 Wrong Format: 1 point for usage text, 2 points for exit value 1
 Exit Value: 1
@@ -296,15 +299,15 @@ file3
 file4
 file5
 stats
-stats_input22647
-stats_tmp22647
+stats_input4602
+stats_tmp4602
 
   PID TTY          TIME CMD
-18130 pts/18   00:00:00 p1gradingscript
-22647 pts/18   00:00:00 stats
-23968 pts/18   00:00:00 ps
-32178 pts/18   00:00:00 tcsh
-32223 pts/18   00:00:00 bash
+ 4602 pts/14   00:00:00 stats
+ 5820 pts/14   00:00:00 ps
+24608 pts/14   00:00:00 tcsh
+24633 pts/14   00:00:00 bash
+32224 pts/14   00:00:00 p1gradingscript
 
 
 After Kill: 8 points if no temp files
@@ -316,9 +319,9 @@ file5
 stats
 
   PID TTY          TIME CMD
-18130 pts/18   00:00:00 p1gradingscript
-24010 pts/18   00:00:00 ps
-32178 pts/18   00:00:00 tcsh
-32223 pts/18   00:00:00 bash
+ 5865 pts/14   00:00:00 ps
+24608 pts/14   00:00:00 tcsh
+24633 pts/14   00:00:00 bash
+32224 pts/14   00:00:00 p1gradingscript
 
 
