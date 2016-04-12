@@ -1,9 +1,20 @@
 #!/bin/sh
+# Calculate average and median for rows or columns
+# in a file or in standard input
+# Usage
+#   Usage: stats {-rows|-cols} [file]
+#
+# Author: Tyler McGinnis
+# Class: CS 344
+# Program 1
+# Spring 2016
 
-INPUT_FILE="stats_input$$"
-TMP_FILE="stats_tmp$$"
+#### FUNCTIONS FOR STATS CALCULATED BY ROW ####
 
-function stats_by_rows () {
+function stats_by_row () {
+    # calculate and output average and median for each row
+    # in program input
+
     local AVERAGES=()  # array for storing each column's average
     local MEDIANS=()   # array for storing each column's medians
 
@@ -15,7 +26,7 @@ function stats_by_rows () {
         # sort temporary file
         sort $TMP_FILE -n -o $TMP_FILE
 
-        # print average and median for row
+        # calculate average and median for the row
         AVERAGES+=($(calculate_average))
         MEDIANS+=($(calculate_median))
     done < $INPUT_FILE
@@ -23,8 +34,30 @@ function stats_by_rows () {
     output_results_rows AVERAGES[@] MEDIANS[@]
 }
 
-function row_to_column () {
-    # arg: col number
+function output_results_rows() {
+    # args:
+    #   $1: array containing each row of program inputs' average
+    #   $2: array containing each row of program input's median
+    # output results for stats calculuated by row
+
+    declare -a local AVERAGES=("${!1}")
+    declare -a local MEDIANS=("${!2}")
+
+    printf "Average\tMedian\n"
+    # print the average and median for each row, tab separated
+    for i in "${!AVERAGES[@]}"
+    do
+        printf '%s\t%s\n' "${AVERAGES[$i]}" "${MEDIANS[$i]}"
+    done
+}
+
+#### FUNCTIONS FOR STATS CALCULATED BY COLUMN ####
+
+function to_column () {
+    # args:
+    #   $1: position of each line to cut
+    # cuts a given column from input and places in $TMP_FILE
+
     COL=$1
 
     while read LINE
@@ -34,12 +67,15 @@ function row_to_column () {
     done < $INPUT_FILE
 }
 
-function stats_by_columns () {
+function stats_by_column () {
+    # calculate and output average and median for each column
+    # in program input
+
     local AVERAGES=()  # array for storing each column's average
     local MEDIANS=()   # array for storing each column's medians
 
     local ROWS=$(wc -l < $INPUT_FILE)   # number of rows in file
-    local WORDS=$(wc -w < $INPUT_FILE)  # number of numbers in file
+    local WORDS=$(wc -w < $INPUT_FILE)  # count of numbers in file
 
     # if file is empty, avoid division by zero error
     if [ $ROWS -eq "0" ]
@@ -53,7 +89,7 @@ function stats_by_columns () {
     do
         $(> $TMP_FILE)  # empty $TMP_FILE
 
-        row_to_column $COL
+        to_column $COL  # translate numbers in input file to column
 
         # sort temporary file from least to greatest
         sort $TMP_FILE -n -o $TMP_FILE
@@ -68,37 +104,38 @@ function stats_by_columns () {
     output_results_columns AVERAGES[@] MEDIANS[@]
 }
 
-function output_results_rows() {
-    declare -a local AVERAGES=("${!1}")
-    declare -a local MEDIANS=("${!2}")
-
-    printf "Average\tMedian\n"
-    for i in "${!AVERAGES[@]}"
-    do
-        printf '%s\t%s\n' "${AVERAGES[$i]}" "${MEDIANS[$i]}"
-    done
-}
 
 function output_results_columns() {
+    # args:
+    #   $1: array containing each column of program inputs' average
+    #   $2: array containing each column of program input's median
+    # output results for stats calculuated by column
+
     declare -a local AVERAGES=("${!1}")
     declare -a local MEDIANS=("${!2}")
 
-    # print results to standard output
     echo Averages:
     if [ ${#AVERAGES[@]} -ne 0 ]
     then
+        # output averages on one line, tab separated
         printf "%s\t" "${AVERAGES[@]}"
     fi
     printf "\n"
     echo Medians:
     if [ ${#MEDIANS[@]} -ne 0 ]
     then
+        # output medians on one line, tab separated
         printf "%s\t" "${MEDIANS[@]}"
     fi
     printf "\n"
 }
 
+#### FUNCTIONS FOR CALCULATION ####
+
 function calculate_average() {
+    # calculate the average of the numbers currently in
+    # $TMP_FILE
+
     local SUM=0
     local COUNT=0
     local AVERAGE=0
@@ -117,68 +154,67 @@ function calculate_average() {
 }
 
 function calculate_median() {
+    # calculate the median of the numbers currently in
+    # $TMP_FILE
+    # NOTE: assumes $TMP_FILE has been sorted
+
     # find number of lines in $TMP_FILE
     local NUMS=$(wc -l < $TMP_FILE)
 
-    # calculate line of $TMP_FILE with median number
+    # calculate line of $TMP_FILE that contains median number
     local MEDIAN_INDEX=$(( ($NUMS / 2) +1 ))
 
-    # get median line of $TMPFILE
+    # get median holding line of $TMPFILE
     echo $( head -$MEDIAN_INDEX $TMP_FILE | tail -1 )
 }
+
+#### UTILITIES ####
 
 function clean_up() {
     # remove temp files
     rm -f $TMP_FILE
-    rm -rf "stats_input$$"
+    rm -f $TMP_INPUT_NAME
 }
 
 function usage() {
-    >&2 echo "Usage: stats {-rows|-cols} [file]"
-    clean_up
+    echo "Usage: stats {-rows|-cols} [file]" >&2
     exit 1
 }
 
+# Usage of the trap command based on the following source:
+# http://redsymbol.net/articles/bash-exit-traps/
 trap clean_up EXIT  # run clean_up no matter what
 
+TMP_INPUT_NAME="stats_input$$"  # name of temporary input file
+INPUT_FILE=$TMP_INPUT_NAME      # will change if input file passed in
+TMP_FILE="stats_tmp$$"          # temporary file for performing calculations
+
+# input checking based on assignment specification
 if [ "$#" = "1" ]
 then
-    # read from standard input
-    cat > $INPUT_FILE
+    cat > $INPUT_FILE  # get input from stdin
 elif [ "$#" = "2" ]
 then
-    INPUT_FILE=$2
+    INPUT_FILE=$2  # file passed in as arg
 else
-    # bad arguments
-    usage
+    usage  # bad args
 fi
 
-if [ ! -r $INPUT_FILE ]
+if [ ! -r $INPUT_FILE ]  # check file can be read
 then
-    >&2 echo "${0}: Cannot read ${INPUT_FILE}"
-    clean_up
+    echo "${0}: Cannot read ${INPUT_FILE}" >&2
     exit 1
 fi
 
+# flag checking based on assignment specification
 if [[ $1 == -r* ]];
 then
-    # calculate stats for rows
-    stats_by_rows
+    stats_by_row  # calculate by row
 elif [[ $1 == -c* ]];
 then
-    # calculate stats for columns
-    stats_by_columns
+    stats_by_column  # calculate by column
 else
-    # bad arguments
-    usage
+    usage  # bad args
 fi
-
-# clean up files
-clean_up
-
-# HANDLE ERRORS
-# NEED COMMENTS
-# PIPE ERROR OUTPUT CORRECTLY
-# CORRECT EXIT STATEMENTS
 
 exit 0
