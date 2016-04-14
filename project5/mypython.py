@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 # Author: Tyler McGinnis
+# CS 344
+# Spring 2016
+# Program 5
 
 import string
 import random
@@ -8,7 +11,9 @@ import random
 def create_file(file_name, file_contents):
     with open(file_name, "w+") as f:
         f.write(file_contents + "\n")
-        f.seek(0)
+
+def print_file(file_name):
+    with open(file_name, "r") as f:
         print "%s contents:\n%s" % (file_name, f.read())
 
 def create_random_string(string_length):
@@ -19,6 +24,7 @@ def main():
     file_names = ["result_file1", "result_file2", "result_file3"]
     for name in file_names:
         create_file(name, create_random_string(10))
+        print_file(name)
 
     random_numbers = (random.randint(1,42), random.randint(1,42))
 
