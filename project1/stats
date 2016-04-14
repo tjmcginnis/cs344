@@ -147,6 +147,8 @@ function calculate_average() {
     done < $TMP_FILE
 
     # add 0.5 to AVERAGE in order to round properly
+    # bc usage attributed to the following source:
+    # https://www.shell-tips.com/2010/06/14/performing-math-calculation-in-bash/
     AVERAGE=$( echo $SUM / $COUNT + 0.5 | bc -l )
 
     # rounded AVERAGE
@@ -192,7 +194,7 @@ TMP_FILE="stats_tmp$$"          # temporary file for performing calculations
 # input checking based on assignment specification
 if [ "$#" = "1" ]
 then
-    cat > $INPUT_FILE  # get input from stdin
+    cat > $INPUT_FILE # get input from stdin
 elif [ "$#" = "2" ]
 then
     INPUT_FILE=$2  # file passed in as arg
