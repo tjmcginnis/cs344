@@ -194,7 +194,13 @@ TMP_FILE="stats_tmp$$"          # temporary file for performing calculations
 # input checking based on assignment specification
 if [ "$#" = "1" ]
 then
-    cat > $INPUT_FILE # get input from stdin
+    # check for correct flag usage before waiting for input
+    if [[ $1 == -r* ]] || [[ $1 == -c* ]]
+    then
+        cat > $INPUT_FILE # get input from stdin
+    else
+        usage
+    fi
 elif [ "$#" = "2" ]
 then
     INPUT_FILE=$2  # file passed in as arg
@@ -204,7 +210,7 @@ fi
 
 if [ ! -r $INPUT_FILE ]  # check file can be read
 then
-    echo "${0}: Cannot read ${INPUT_FILE}" >&2
+    echo "${0}: cannot read ${INPUT_FILE}" >&2
     exit 1
 fi
 

@@ -3,12 +3,12 @@ Creating file1 file2 file3 file4 file5
 
 
 total 40
--rw-rw----. 1 mcginnit upg53994  259 Apr 14 14:30 file1
--rw-rw----. 1 mcginnit upg53994   49 Apr 14 14:30 file2
--rw-rw----. 1 mcginnit upg53994    3 Apr 14 14:30 file3
--rw-rw----. 1 mcginnit upg53994    0 Apr 14 14:30 file4
--rw-rw----. 1 mcginnit upg53994 5831 Apr 14 14:30 file5
--rwxrwx---. 1 mcginnit upg53994 5648 Apr 14 14:30 stats
+-rw-rw----. 1 mcginnit upg53994  259 Apr 17 08:03 file1
+-rw-rw----. 1 mcginnit upg53994   49 Apr 17 08:03 file2
+-rw-rw----. 1 mcginnit upg53994    3 Apr 17 08:03 file3
+-rw-rw----. 1 mcginnit upg53994    0 Apr 17 08:03 file4
+-rw-rw----. 1 mcginnit upg53994 5831 Apr 17 08:03 file5
+-rwxrwx---. 1 mcginnit upg53994 5793 Apr 17 08:03 stats
 
 
 --------------------------------------------------------------------------
@@ -212,7 +212,7 @@ File Not Readable: 2 points for error msg, 2 points for program halting
 
 Exit Value: 1
 Error Message:
-./stats: Cannot read file3
+./stats: cannot read file3
 
 
 
@@ -299,15 +299,15 @@ file3
 file4
 file5
 stats
-stats_input27814
-stats_tmp27814
+stats_input13955
+stats_tmp13955
 
   PID TTY          TIME CMD
- 1859 pts/10   00:00:00 tcsh
- 1884 pts/10   00:00:00 bash
-23432 pts/10   00:00:00 p1gradingscript
-27814 pts/10   00:00:00 stats
-28890 pts/10   00:00:00 ps
+ 9564 pts/3    00:00:00 p1gradingscript
+13955 pts/3    00:00:00 stats
+15259 pts/3    00:00:00 ps
+28842 pts/3    00:00:00 tcsh
+28875 pts/3    00:00:00 bash
 
 
 After Kill: 8 points if no temp files
@@ -319,9 +319,9 @@ file5
 stats
 
   PID TTY          TIME CMD
- 1859 pts/10   00:00:00 tcsh
- 1884 pts/10   00:00:00 bash
-23432 pts/10   00:00:00 p1gradingscript
-28939 pts/10   00:00:00 ps
+ 9564 pts/3    00:00:00 p1gradingscript
+15303 pts/3    00:00:00 ps
+28842 pts/3    00:00:00 tcsh
+28875 pts/3    00:00:00 bash
 
 
