@@ -4,28 +4,54 @@
 
 
 struct Room {
-    char *room_name;
-    struct Room *connections;
+    char* room_name;
+    struct Room *room_connections[6];
+    char room_type;
 };
+
+struct Room *room_create(char* room_name, char room_type)
+{
+    int i;
+    int arr_size;
+    struct Room *new_room = malloc(sizeof(struct Room));
+    new_room->room_name = room_name;
+    new_room->room_type = room_type;
+
+    // initialize room_connections to null
+
+    return new_room;
+}
+
+void room_destroy(struct Room *room)
+{
+    free(room);
+}
+
+void add_connection(struct Room *room, struct Room *connection)
+{
+    // check that each room has less than 6 connections first
+    // then add mutual connection between the two rooms
+    printf("%i\n", sizeof(room));
+    printf("%i\n", sizeof(room->room_connections));
+}
+
 
 int main(int argc, char *argv[])
 {
-    char *name = "Champagne Room";
-    char *other_name = "Bubbly room";
+    struct Room *first_room = room_create("First room", 's');
+    struct Room *second_room = room_create("Second room", 'e');
 
-    struct Room *new_room = malloc(sizeof(struct Room));
-    new_room->room_name = name;
-    new_room->connections = malloc(6 * sizeof(struct Room));
+    printf("%s\n", first_room->room_name);
 
-    struct Room *other_room = malloc(sizeof(struct Room));
-    other_room->room_name = other_name;
-    new_room->connections[0] = *other_room;
-    struct Room *other_other = new_room->connections[0];
+    first_room->room_connections[0] = second_room;
 
-    printf("Room name: %s\n", new_room->room_name);
-    printf("Other room name: %s\n", other_other->room_name);
+    struct Room *room_ptr = first_room->room_connections[0];
+    printf("%s\n", room_ptr->room_name);
 
-    free(new_room);
+    add_connection(first_room, second_room);
+
+    room_destroy(first_room);
+    room_destroy(second_room);
 
     return 0;
 }
