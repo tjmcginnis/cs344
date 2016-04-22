@@ -31,13 +31,17 @@ void room_destroy(struct Room *room)
     free(room);
 }
 
-void add_connection(struct Room *room, struct Room *connection)
+int count_connections(struct Room *room)
 {
-    // check that each room has less than 6 connections first
-    // check that rooms aren't already connected
-    // then add mutual connection between the two rooms
-    printf("%i\n", sizeof(room));
-    printf("%i\n", sizeof(room->room_connections));
+    int i;
+    int count = 0;
+
+    for (i = 0; i < MAX_CONNECTIONS; i++) {
+        if (room->room_connections[i] != NULL) {
+            count += 1;
+        }
+    }
+    return count;
 }
 
 int check_connection(struct Room *room, struct Room *connection)
@@ -51,6 +55,21 @@ int check_connection(struct Room *room, struct Room *connection)
     return 1;
 }
 
+void add_connection(struct Room *room, struct Room *connection)
+{
+    // check that each room has less than 6 connections first
+    int room_one_count = count_connections(room);
+    int room_two_count = count_connections(connection);
+    // check that rooms aren't already connected
+    int connected = check_connection(room, connection);
+    // then add mutual connection between the two rooms
+    if (room_one_count < 6 && room_two_count < 6 && connected == 1) {
+        room->room_connections[room_one_count] = connection;
+        connection->room_connections[room_two_count] = room;
+    }
+}
+
+
 
 int main(int argc, char *argv[])
 {
@@ -59,17 +78,7 @@ int main(int argc, char *argv[])
 
     printf("%s\n", first_room->room_name);
 
-    first_room->room_connections[0] = second_room;
-
-    struct Room *room_ptr = first_room->room_connections[0];
-    printf("%s\n", room_ptr->room_name);
-
-    int i;
-    for (i = 0; i < MAX_CONNECTIONS; i++) {
-        printf("%p\n", first_room->room_connections[i]);
-    }
-    int connected = check_connection(first_room, second_room);
-    printf("%i\n", connected);
+    add_connection(first_room, second_room);
 
     room_destroy(first_room);
     room_destroy(second_room);
