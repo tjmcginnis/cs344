@@ -5,3 +5,6 @@ all:
 
 clean:
 	rm -f mcginnit.adventure
+	rm -f "First room"
+	rm -f "Second room"
+	rm -f "Third room"

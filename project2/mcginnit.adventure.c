@@ -5,8 +5,20 @@
 
 
 #define MAX_CONNECTIONS 6
+#define MAX_NAME_LENGTH 10  // includes extra byte for \0
 
-const char* ROOM_NAMES[] = {};
+const char* ROOM_NAMES[] = {
+    "Coruscant",
+    "Tatooine",
+    "Felucia",
+    "Hoth",
+    "Naboo",
+    "Serenno",
+    "Kamino",
+    "Kashyyyk",
+    "Mandalore",
+    "Ryloth"
+};
 
 struct Room {
     char* room_name;
@@ -104,8 +116,31 @@ void room_write_to_file(struct Room *room)
     fclose(fp);
 }
 
-void room_load_from_file(char* file_name)
+// http://stackoverflow.com/questions/4770985/how-to-check-if-a-string-starts-with-another-string-in-c
+int starts_with(const char* str, const char* pre)
 {
+    size_t lenstr = strlen(str);
+    size_t lenpre = strlen(pre);
+
+    return lenstr < lenpre ? 0 : strncmp(pre, str, lenpre) == 0;
+}
+
+struct Room *room_load_from_file(char* file_name)
+{
+    int i;
+    int lenpre;
+    char str[30];
+    FILE *fp;
+    fp = fopen(file_name, "r");
+    assert(fp != NULL);
+
+    while (fgets(str, sizeof(str), fp)) {
+        if (starts_with(str, "ROOM NAME:")) {
+            printf("%s", str);
+        }
+    }
+
+    fclose(fp);
 
 }
 
@@ -114,14 +149,19 @@ int main(int argc, char *argv[])
 {
     struct Room *first_room = room_create("First room", "START_ROOM");
     struct Room *second_room = room_create("Second room", "END_ROOM");
+    struct Room *third_room = room_create("Third room", "MID_ROOM");
 
     add_connection(first_room, second_room);
+    add_connection(first_room, third_room);
 
     room_write_to_file(first_room);
     room_write_to_file(second_room);
 
+    room_load_from_file(first_room->room_name);
+
     room_destroy(first_room);
     room_destroy(second_room);
+    room_destroy(third_room);
 
     return 0;
 }
