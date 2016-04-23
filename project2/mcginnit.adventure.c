@@ -21,12 +21,12 @@ const char* ROOM_NAMES[] = {
 };
 
 struct Room {
-    char* room_name;
+    const char* room_name;
     struct Room *room_connections[MAX_CONNECTIONS];
-    char* room_type;
+    const char* room_type;
 };
 
-struct Room *room_create(char* room_name, char* room_type)
+struct Room *room_create(const char* room_name, const char* room_type)
 {
     int i;
     struct Room *new_room = malloc(sizeof(struct Room));
@@ -122,34 +122,33 @@ int starts_with(const char* str, const char* pre)
     size_t lenstr = strlen(str);
     size_t lenpre = strlen(pre);
 
-    return lenstr < lenpre ? 0 : strncmp(pre, str, lenpre) == 0;
+    return lenstr < lenpre ? 1 : strncmp(pre, str, lenpre) != 0;
 }
 
-struct Room *room_load_from_file(char* file_name)
+struct Room *room_read_from_file(const char* file_name)
 {
     int i;
     int lenpre;
     char str[30];
+    char* connections[6];
     FILE *fp;
     fp = fopen(file_name, "r");
     assert(fp != NULL);
 
-    while (fgets(str, sizeof(str), fp)) {
-        if (starts_with(str, "ROOM NAME:")) {
-            printf("%s", str);
-        }
-    }
+    // get file name
+    fseek(fp, 11, SEEK_CUR);
+    fgets(str, sizeof(str), fp);
+    printf("CURRENT LOCATION: %s", str);
 
     fclose(fp);
-
 }
 
 
 int main(int argc, char *argv[])
 {
-    struct Room *first_room = room_create("First room", "START_ROOM");
-    struct Room *second_room = room_create("Second room", "END_ROOM");
-    struct Room *third_room = room_create("Third room", "MID_ROOM");
+    struct Room *first_room = room_create(ROOM_NAMES[0], "START_ROOM");
+    struct Room *second_room = room_create(ROOM_NAMES[1], "END_ROOM");
+    struct Room *third_room = room_create(ROOM_NAMES[2], "MID_ROOM");
 
     add_connection(first_room, second_room);
     add_connection(first_room, third_room);
@@ -157,7 +156,7 @@ int main(int argc, char *argv[])
     room_write_to_file(first_room);
     room_write_to_file(second_room);
 
-    room_load_from_file(first_room->room_name);
+    room_read_from_file(first_room->room_name);
 
     room_destroy(first_room);
     room_destroy(second_room);
