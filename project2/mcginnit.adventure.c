@@ -1,11 +1,15 @@
 #include "dbg.h"    // REMOVE ME
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h> // getpid()
+#include <sys/stat.h> // mkdir()
 #include <assert.h>
 
 
 #define MAX_CONNECTIONS 6
-#define MAX_NAME_LENGTH 10  // includes extra byte for \0
+#define GAME_ROOMS 7
+#define START_ROOMS 1
+#define END_ROOMS 1
 
 const char* ROOM_NAMES[] = {
     "Coruscant",
@@ -18,6 +22,12 @@ const char* ROOM_NAMES[] = {
     "Kashyyyk",
     "Mandalore",
     "Ryloth"
+};
+
+const char* ROOM_TYPES[] = {
+    "START_ROOM",
+    "MID_ROOM",
+    "END_ROOM"
 };
 
 struct Room {
@@ -125,12 +135,39 @@ int starts_with(const char* str, const char* pre)
     return lenstr < lenpre ? 1 : strncmp(pre, str, lenpre) != 0;
 }
 
-struct Room *room_read_from_file(const char* file_name)
+const char* set_up()
 {
     int i;
-    int lenpre;
+    int pid;
+    int stat;
+    char* dir_name;
+    const char* start_room;
+
+    // create tmp dir with process id
+    pid = getpid();
+    dir_name = malloc(sizeof(char) * 30);
+    sprintf(dir_name, "mcginnit.rooms.%i", pid);
+    // http://pubs.opengroup.org/onlinepubs/009695399/functions/mkdir.html
+    stat = mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+    // randomly pick 7 room names
+
+    // create rooms
+
+    // randomly create connections
+
+    // write each room to a file
+
+    // destroy room structs
+
+    free(dir_name);
+
+    return start_room;
+}
+
+const char* next_room(const char* file_name)
+{
     char str[30];
-    char* connections[6];
     FILE *fp;
     fp = fopen(file_name, "r");
     assert(fp != NULL);
@@ -143,12 +180,15 @@ struct Room *room_read_from_file(const char* file_name)
     fclose(fp);
 }
 
-
 int main(int argc, char *argv[])
 {
     struct Room *first_room = room_create(ROOM_NAMES[0], "START_ROOM");
     struct Room *second_room = room_create(ROOM_NAMES[1], "END_ROOM");
     struct Room *third_room = room_create(ROOM_NAMES[2], "MID_ROOM");
+    struct Room *fourth_room = room_create(ROOM_NAMES[3], "MID_ROOM");
+    struct Room *fifth_room = room_create(ROOM_NAMES[4], "MID_ROOM");
+    struct Room *sixth_room = room_create(ROOM_NAMES[5], "MID_ROOM");
+    struct Room *seventh_room = room_create(ROOM_NAMES[6], "MID_ROOM");
 
     add_connection(first_room, second_room);
     add_connection(first_room, third_room);
@@ -156,11 +196,15 @@ int main(int argc, char *argv[])
     room_write_to_file(first_room);
     room_write_to_file(second_room);
 
-    room_read_from_file(first_room->room_name);
-
     room_destroy(first_room);
     room_destroy(second_room);
     room_destroy(third_room);
+    room_destroy(fourth_room);
+    room_destroy(fifth_room);
+    room_destroy(sixth_room);
+    room_destroy(seventh_room);
+
+    set_up();
 
     return 0;
 }

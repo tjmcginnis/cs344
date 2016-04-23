@@ -6,3 +6,4 @@ all:
 clean:
 	rm -f mcginnit.adventure
 	rm -f "Coruscant" "Tatooine"
+	rm -rf mcginnit.rooms.*
