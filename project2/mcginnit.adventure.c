@@ -114,6 +114,7 @@ void room_write_to_file(struct Room *room)
 {
     int i;
     FILE *fp;
+
     fp = fopen(room->room_name, "w+");
 
     assert(fp != NULL);
@@ -201,6 +202,8 @@ const char* set_up()
     // http://pubs.opengroup.org/onlinepubs/009695399/functions/mkdir.html
     stat = mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     assert(stat == 0);
+    stat = chdir(dir_name);
+    assert(stat == 0);
 
     // randomly pick 7 room names
     // create rooms
@@ -211,6 +214,7 @@ const char* set_up()
         switch (i) {
             case 0:
                 room_type = "START_ROOM";
+                start_room = ROOM_NAMES[indices[i] - 1];
                 break;
             case GAME_ROOMS - 1:
                 room_type = "END_ROOM";
@@ -227,11 +231,10 @@ const char* set_up()
     // choose n indices to connect to
     // do until at least n connections are made
     for (i = 0; i < (sizeof(rooms) / sizeof(struct Room*)); i++) {
-        j = 0;
         num_connections = rand() % (MAX_CONNECTIONS - MIN_CONNECTIONS) + MIN_CONNECTIONS;
-        indices = choose_random_indices();
-        while (count_connections(rooms[i]) < num_connections && j < num_connections) {
-            add_connection(rooms[i], rooms[indices[j++]]);
+        while (count_connections(rooms[i]) < num_connections) {
+            j = rand() % GAME_ROOMS;
+            add_connection(rooms[i], rooms[j]);
         }
     }
 
@@ -270,7 +273,8 @@ int main(int argc, char *argv[])
     int seed;
     seed = time(NULL);
     srand(seed);
-    set_up();
+    const char* start = set_up();
+    printf("%s\n", start);
 
     return 0;
 }
