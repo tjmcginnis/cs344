@@ -180,11 +180,10 @@ int* choose_random_indices()
     return indices;
 }
 
-const char* set_up()
+const char* set_up(int pid)
 {
     int i;
     int j;
-    int pid;
     int stat;
     int num_connections;
     int* indices;
@@ -196,7 +195,6 @@ const char* set_up()
     struct Room *tmp_room;
 
     // create tmp dir with process id
-    pid = getpid();
     dir_name = malloc(sizeof(char) * 30);
     sprintf(dir_name, "mcginnit.rooms.%i", pid);
     // http://pubs.opengroup.org/onlinepubs/009695399/functions/mkdir.html
@@ -270,10 +268,12 @@ const char* next_room(const char* file_name)
 
 int main(int argc, char *argv[])
 {
+    int pid;
     int seed;
+    pid = getpid();
     seed = time(NULL);
     srand(seed);
-    const char* start = set_up();
+    const char* start = set_up(pid);
     printf("%s\n", start);
 
     return 0;

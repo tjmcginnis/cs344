@@ -5,5 +5,4 @@ all:
 
 clean:
 	rm -f mcginnit.adventure
-	rm -f "Coruscant" "Tatooine" "Felucia" "Hoth" "Naboo" "Serenno" "Kamino" "Kashyyyk" "Mandalore" "Ryloth"
 	rm -rf mcginnit.rooms.*
