@@ -7,11 +7,12 @@
 
 
 #define MAX_CONNECTIONS 6
+#define ROOM_CHOICES 10
 #define GAME_ROOMS 7
 #define START_ROOMS 1
 #define END_ROOMS 1
 
-const char* ROOM_NAMES[] = {
+const char* ROOM_NAMES[ROOM_CHOICES] = {
     "Coruscant",
     "Tatooine",
     "Felucia",
@@ -91,12 +92,12 @@ int check_connection(struct Room *room, struct Room *connection)
 
 void add_connection(struct Room *room, struct Room *connection)
 {
+    assert(room != NULL);
+    assert(connection != NULL);
+
     int room_one_count = count_connections(room);
     int room_two_count = count_connections(connection);
     int connected = check_connection(room, connection);
-
-    assert(room != NULL);
-    assert(connection != NULL);
 
     if (room_one_count < 6 && room_two_count < 6 && connected == 1) {
         room->room_connections[room_one_count] = connection;
@@ -135,13 +136,39 @@ int starts_with(const char* str, const char* pre)
     return lenstr < lenpre ? 1 : strncmp(pre, str, lenpre) != 0;
 }
 
+// http://stackoverflow.com/questions/1608181/unique-random-numbers-in-an-integer-array-in-the-c-programming-language
+// http://www.tutorialspoint.com/cprogramming/c_return_arrays_from_function.htm
+// http://stackoverflow.com/questions/8314370/rand-with-seed-does-not-return-random-if-function-looped
+int* choose_random_indices()
+{
+    int in, im;
+    int seed;
+    static int indices[GAME_ROOMS];
+
+    seed = time(NULL);
+    srand(seed);
+    im = 0;
+
+    for (in = 0; in < ROOM_CHOICES && im < GAME_ROOMS; in++) {
+        int rn = ROOM_CHOICES - in;
+        int rm = GAME_ROOMS - im;
+        if (rand() % rn < rm)
+            indices[im++] = in + 1;
+    }
+
+    assert(im = GAME_ROOMS);
+    return indices;
+}
+
 const char* set_up()
 {
     int i;
     int pid;
     int stat;
+    int* indices;
     char* dir_name;
     const char* start_room;
+    const char* game_rooms[GAME_ROOMS];
 
     // create tmp dir with process id
     pid = getpid();
@@ -149,8 +176,14 @@ const char* set_up()
     sprintf(dir_name, "mcginnit.rooms.%i", pid);
     // http://pubs.opengroup.org/onlinepubs/009695399/functions/mkdir.html
     stat = mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    assert(stat == 0);
 
     // randomly pick 7 room names
+    indices = choose_random_indices();
+
+    for (i = 0; i < GAME_ROOMS; i++) {
+        game_rooms[i] = ROOM_NAMES[indices[i] - 1];
+    }
 
     // create rooms
 
