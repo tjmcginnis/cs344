@@ -139,7 +139,7 @@ int starts_with(const char* str, const char* pre)
 // http://stackoverflow.com/questions/1608181/unique-random-numbers-in-an-integer-array-in-the-c-programming-language
 // http://www.tutorialspoint.com/cprogramming/c_return_arrays_from_function.htm
 // http://stackoverflow.com/questions/8314370/rand-with-seed-does-not-return-random-if-function-looped
-int* choose_random_indices()
+int* choose_random_indices(int num_indices)
 {
     int in, im;
     int seed;
@@ -167,8 +167,11 @@ const char* set_up()
     int stat;
     int* indices;
     char* dir_name;
+    char* room_type;
     const char* start_room;
     const char* game_rooms[GAME_ROOMS];
+    struct Room *rooms[GAME_ROOMS];
+    struct Room *tmp_room;
 
     // create tmp dir with process id
     pid = getpid();
@@ -179,19 +182,39 @@ const char* set_up()
     assert(stat == 0);
 
     // randomly pick 7 room names
+    // create rooms
     indices = choose_random_indices();
 
     for (i = 0; i < GAME_ROOMS; i++) {
         game_rooms[i] = ROOM_NAMES[indices[i] - 1];
+        switch (i) {
+            case 0:
+                room_type = "START_ROOM";
+                break;
+            case GAME_ROOMS - 1:
+                room_type = "END_ROOM";
+                break;
+            default:
+                room_type="MID_ROOM";
+        }
+        tmp_room = room_create(ROOM_NAMES[indices[i] - 1], room_type);
+        rooms[i] = tmp_room;
     }
 
-    // create rooms
-
     // randomly create connections
+    // choose a random number n between 3 and 6
+    // choose n indices to connect to
+    // do until at least n connections are made
 
     // write each room to a file
+    for (i = 0; i < (sizeof(rooms) / sizeof(struct Room*)); i++) {
+        room_write_to_file(rooms[i]);
+    }
 
     // destroy room structs
+    for (i = 0; i < (sizeof(rooms) / sizeof(struct Room*)); i++) {
+        room_destroy(rooms[i]);
+    }
 
     free(dir_name);
 
@@ -215,28 +238,6 @@ const char* next_room(const char* file_name)
 
 int main(int argc, char *argv[])
 {
-    struct Room *first_room = room_create(ROOM_NAMES[0], "START_ROOM");
-    struct Room *second_room = room_create(ROOM_NAMES[1], "END_ROOM");
-    struct Room *third_room = room_create(ROOM_NAMES[2], "MID_ROOM");
-    struct Room *fourth_room = room_create(ROOM_NAMES[3], "MID_ROOM");
-    struct Room *fifth_room = room_create(ROOM_NAMES[4], "MID_ROOM");
-    struct Room *sixth_room = room_create(ROOM_NAMES[5], "MID_ROOM");
-    struct Room *seventh_room = room_create(ROOM_NAMES[6], "MID_ROOM");
-
-    add_connection(first_room, second_room);
-    add_connection(first_room, third_room);
-
-    room_write_to_file(first_room);
-    room_write_to_file(second_room);
-
-    room_destroy(first_room);
-    room_destroy(second_room);
-    room_destroy(third_room);
-    room_destroy(fourth_room);
-    room_destroy(fifth_room);
-    room_destroy(sixth_room);
-    room_destroy(seventh_room);
-
     set_up();
 
     return 0;
