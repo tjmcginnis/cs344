@@ -6,6 +6,7 @@
 #include <assert.h>
 
 
+#define MIN_CONNECTIONS 3
 #define MAX_CONNECTIONS 6
 #define ROOM_CHOICES 10
 #define GAME_ROOMS 7
@@ -95,11 +96,15 @@ void add_connection(struct Room *room, struct Room *connection)
     assert(room != NULL);
     assert(connection != NULL);
 
+    int different = room == connection ? 1 : 0;
     int room_one_count = count_connections(room);
     int room_two_count = count_connections(connection);
     int connected = check_connection(room, connection);
 
-    if (room_one_count < 6 && room_two_count < 6 && connected == 1) {
+    if (room_one_count < 6 &&
+        room_two_count < 6 &&
+        connected == 1 &&
+        different == 0) {
         room->room_connections[room_one_count] = connection;
         connection->room_connections[room_two_count] = room;
     }
@@ -136,17 +141,30 @@ int starts_with(const char* str, const char* pre)
     return lenstr < lenpre ? 1 : strncmp(pre, str, lenpre) != 0;
 }
 
+// http://stackoverflow.com/questions/6127503/shuffle-array-in-c
+void shuffle(int *array, size_t n)
+{
+    size_t i, j;
+    int t;
+
+    if (n > 1) {
+        for (i = 0; i < n  - 1; i++) {
+            j = i + rand() / (RAND_MAX / (n - i) + 1);
+            t = array[j];
+            array[j] = array[i];
+            array[i] = t;
+        }
+    }
+}
+
 // http://stackoverflow.com/questions/1608181/unique-random-numbers-in-an-integer-array-in-the-c-programming-language
 // http://www.tutorialspoint.com/cprogramming/c_return_arrays_from_function.htm
 // http://stackoverflow.com/questions/8314370/rand-with-seed-does-not-return-random-if-function-looped
-int* choose_random_indices(int num_indices)
+int* choose_random_indices()
 {
     int in, im;
-    int seed;
     static int indices[GAME_ROOMS];
 
-    seed = time(NULL);
-    srand(seed);
     im = 0;
 
     for (in = 0; in < ROOM_CHOICES && im < GAME_ROOMS; in++) {
@@ -157,14 +175,17 @@ int* choose_random_indices(int num_indices)
     }
 
     assert(im = GAME_ROOMS);
+    shuffle(indices, GAME_ROOMS);
     return indices;
 }
 
 const char* set_up()
 {
     int i;
+    int j;
     int pid;
     int stat;
+    int num_connections;
     int* indices;
     char* dir_name;
     char* room_type;
@@ -183,7 +204,7 @@ const char* set_up()
 
     // randomly pick 7 room names
     // create rooms
-    indices = choose_random_indices();
+    indices = choose_random_indices(ROOM_CHOICES, GAME_ROOMS);
 
     for (i = 0; i < GAME_ROOMS; i++) {
         game_rooms[i] = ROOM_NAMES[indices[i] - 1];
@@ -205,6 +226,14 @@ const char* set_up()
     // choose a random number n between 3 and 6
     // choose n indices to connect to
     // do until at least n connections are made
+    for (i = 0; i < (sizeof(rooms) / sizeof(struct Room*)); i++) {
+        j = 0;
+        num_connections = rand() % (MAX_CONNECTIONS - MIN_CONNECTIONS) + MIN_CONNECTIONS;
+        indices = choose_random_indices();
+        while (count_connections(rooms[i]) < num_connections && j < num_connections) {
+            add_connection(rooms[i], rooms[indices[j++]]);
+        }
+    }
 
     // write each room to a file
     for (i = 0; i < (sizeof(rooms) / sizeof(struct Room*)); i++) {
@@ -238,6 +267,9 @@ const char* next_room(const char* file_name)
 
 int main(int argc, char *argv[])
 {
+    int seed;
+    seed = time(NULL);
+    srand(seed);
     set_up();
 
     return 0;
