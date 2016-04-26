@@ -1,17 +1,15 @@
-#include "dbg.h"    // REMOVE ME
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h> // getpid()
 #include <sys/stat.h> // mkdir()
 #include <assert.h>
+#include <string.h>
 
 
 #define MIN_CONNECTIONS 3
 #define MAX_CONNECTIONS 6
 #define ROOM_CHOICES 10
 #define GAME_ROOMS 7
-#define START_ROOMS 1
-#define END_ROOMS 1
 
 const char* ROOM_NAMES[ROOM_CHOICES] = {
     "Coruscant",
@@ -24,12 +22,6 @@ const char* ROOM_NAMES[ROOM_CHOICES] = {
     "Kashyyyk",
     "Mandalore",
     "Ryloth"
-};
-
-const char* ROOM_TYPES[] = {
-    "START_ROOM",
-    "MID_ROOM",
-    "END_ROOM"
 };
 
 struct Room {
@@ -115,7 +107,7 @@ void room_write_to_file(struct Room *room)
     int i;
     FILE *fp;
 
-    fp = fopen(room->room_name, "w+");
+    fp = fopen(room->room_name, "w+"); // PERMISSIONS
 
     assert(fp != NULL);
     assert(room != NULL);
@@ -180,28 +172,23 @@ int* choose_random_indices()
     return indices;
 }
 
-const char* set_up(int pid)
+void make_temp_dir(char* dir_name)
 {
-    int i;
-    int j;
     int stat;
-    int num_connections;
-    int* indices;
-    char* dir_name;
-    char* room_type;
-    const char* start_room;
-    const char* game_rooms[GAME_ROOMS];
-    struct Room *rooms[GAME_ROOMS];
-    struct Room *tmp_room;
-
-    // create tmp dir with process id
-    dir_name = malloc(sizeof(char) * 30);
-    sprintf(dir_name, "mcginnit.rooms.%i", pid);
     // http://pubs.opengroup.org/onlinepubs/009695399/functions/mkdir.html
     stat = mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     assert(stat == 0);
-    stat = chdir(dir_name);
-    assert(stat == 0);
+}
+
+const char* set_up()
+{
+    int i, j, num_connections;
+    int* indices;
+    char* room_type;
+    const char* start_room;
+    const char* game_rooms[GAME_ROOMS];
+    struct Room *tmp_room;
+    struct Room *rooms[GAME_ROOMS];
 
     // randomly pick 7 room names
     // create rooms
@@ -246,8 +233,6 @@ const char* set_up(int pid)
         room_destroy(rooms[i]);
     }
 
-    free(dir_name);
-
     return start_room;
 }
 
@@ -270,10 +255,20 @@ int main(int argc, char *argv[])
 {
     int pid;
     int seed;
+    int stat;
+    char* dir_name;
+
     pid = getpid();
+    dir_name = malloc(sizeof(char) * 30);
+    sprintf(dir_name, "mcginnit.rooms.%i", pid);
+    make_temp_dir(dir_name);
+    stat = chdir(dir_name);
+    assert(stat == 0);
+    free(dir_name);
+
     seed = time(NULL);
     srand(seed);
-    const char* start = set_up(pid);
+    const char* start = set_up();
     printf("%s\n", start);
 
     return 0;
