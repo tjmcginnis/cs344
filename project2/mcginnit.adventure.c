@@ -95,8 +95,8 @@ void add_connection(struct Room *room, struct Room *connection)
 
     if (room_one_count < 6 &&
         room_two_count < 6 &&
-        connected == 1 &&
-        different == 0) {
+        connected     == 1 &&
+        different     == 0) {
         room->room_connections[room_one_count] = connection;
         connection->room_connections[room_two_count] = room;
     }
@@ -107,7 +107,7 @@ void room_write_to_file(struct Room *room)
     int i;
     FILE *fp;
 
-    fp = fopen(room->room_name, "w+"); // PERMISSIONS
+    fp = fopen(room->room_name, "w+"); // PERMISSIONS // check not null
 
     assert(fp != NULL);
     assert(room != NULL);
@@ -128,8 +128,8 @@ void room_write_to_file(struct Room *room)
 // http://stackoverflow.com/questions/4770985/how-to-check-if-a-string-starts-with-another-string-in-c
 int starts_with(const char* str, const char* pre)
 {
-    size_t lenstr = strlen(str);
-    size_t lenpre = strlen(pre);
+    int lenstr = strlen(str);
+    int lenpre = strlen(pre);
 
     return lenstr < lenpre ? 1 : strncmp(pre, str, lenpre) != 0;
 }
@@ -137,7 +137,7 @@ int starts_with(const char* str, const char* pre)
 // http://stackoverflow.com/questions/6127503/shuffle-array-in-c
 void shuffle(int *array, size_t n)
 {
-    size_t i, j;
+    int i, j;
     int t;
 
     if (n > 1) {
@@ -180,26 +180,49 @@ void make_temp_dir(char* dir_name)
     assert(stat == 0);
 }
 
+void connect_rooms(struct Room** rooms)
+{
+    // randomly create connections
+    // choose a random number n between 3 and 6
+    // choose n indices to connect to
+    // do until at least n connections are made
+    int i, j, num_connections;
+
+    j = 0;
+
+    for (i = 0; i < GAME_ROOMS; i++) {
+        num_connections = rand() % (MAX_CONNECTIONS - MIN_CONNECTIONS) + MIN_CONNECTIONS;
+        while (count_connections(rooms[i]) < num_connections) {
+            j = rand() % GAME_ROOMS;
+            add_connection(rooms[i], rooms[j]);
+        }
+    }
+}
+
+void create_room_files(struct Room **rooms)
+{
+   int i;
+   for (i = 0; i < GAME_ROOMS; i++) {
+        room_write_to_file(rooms[i]);
+    }
+}
+
 const char* set_up()
 {
-    int i, j, num_connections;
-    int* indices;
+    int i;
+    int* random_indices;
     char* room_type;
     const char* start_room;
-    const char* game_rooms[GAME_ROOMS];
-    struct Room *tmp_room;
     struct Room *rooms[GAME_ROOMS];
 
     // randomly pick 7 room names
-    // create rooms
-    indices = choose_random_indices(ROOM_CHOICES, GAME_ROOMS);
+    random_indices = choose_random_indices(ROOM_CHOICES, GAME_ROOMS);
 
     for (i = 0; i < GAME_ROOMS; i++) {
-        game_rooms[i] = ROOM_NAMES[indices[i] - 1];
         switch (i) {
             case 0:
                 room_type = "START_ROOM";
-                start_room = ROOM_NAMES[indices[i] - 1];
+                start_room = ROOM_NAMES[random_indices[i] - 1];
                 break;
             case GAME_ROOMS - 1:
                 room_type = "END_ROOM";
@@ -207,26 +230,11 @@ const char* set_up()
             default:
                 room_type="MID_ROOM";
         }
-        tmp_room = room_create(ROOM_NAMES[indices[i] - 1], room_type);
-        rooms[i] = tmp_room;
+        rooms[i] = room_create(ROOM_NAMES[random_indices[i] - 1], room_type);
     }
 
-    // randomly create connections
-    // choose a random number n between 3 and 6
-    // choose n indices to connect to
-    // do until at least n connections are made
-    for (i = 0; i < (sizeof(rooms) / sizeof(struct Room*)); i++) {
-        num_connections = rand() % (MAX_CONNECTIONS - MIN_CONNECTIONS) + MIN_CONNECTIONS;
-        while (count_connections(rooms[i]) < num_connections) {
-            j = rand() % GAME_ROOMS;
-            add_connection(rooms[i], rooms[j]);
-        }
-    }
-
-    // write each room to a file
-    for (i = 0; i < (sizeof(rooms) / sizeof(struct Room*)); i++) {
-        room_write_to_file(rooms[i]);
-    }
+    connect_rooms(rooms);
+    create_room_files(rooms);
 
     // destroy room structs
     for (i = 0; i < (sizeof(rooms) / sizeof(struct Room*)); i++) {
@@ -240,7 +248,7 @@ const char* next_room(const char* file_name)
 {
     char str[30];
     FILE *fp;
-    fp = fopen(file_name, "r");
+    fp = fopen(file_name, "r");  // check fp
     assert(fp != NULL);
 
     // get file name
@@ -257,18 +265,21 @@ int main(int argc, char *argv[])
     int seed;
     int stat;
     char* dir_name;
+    const char* start;
 
     pid = getpid();
     dir_name = malloc(sizeof(char) * 30);
     sprintf(dir_name, "mcginnit.rooms.%i", pid);
     make_temp_dir(dir_name);
+
     stat = chdir(dir_name);
     assert(stat == 0);
+
     free(dir_name);
 
     seed = time(NULL);
     srand(seed);
-    const char* start = set_up();
+    start = set_up();
     printf("%s\n", start);
 
     return 0;
