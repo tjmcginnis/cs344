@@ -244,6 +244,23 @@ const char* set_up()
     return start_room;
 }
 
+void print_room_info(FILE *room_file)
+{
+    char str[100];
+    char* connections[6];
+    assert(room_file != NULL);
+
+    fseek(room_file, 11, SEEK_CUR);
+    fgets(str, sizeof(str), room_file);
+    printf("CURRENT LOCATION: %s", str);
+
+    //fseek(room_file, 14, SEEK_CUR);
+    char str1[10], str2[10], str3[10];
+    // fgets(str, sizeof(str), room_file);
+    fscanf(room_file, "%s %s %s", str1, str2, str3);
+    printf("POSSIBLE CONNECTIONS: %s, %s, %s.", str1, str2, str3);
+}
+
 const char* next_room(const char* file_name)
 {
     char str[30];
@@ -251,10 +268,7 @@ const char* next_room(const char* file_name)
     fp = fopen(file_name, "r");  // check fp
     assert(fp != NULL);
 
-    // get file name
-    fseek(fp, 11, SEEK_CUR);
-    fgets(str, sizeof(str), fp);
-    printf("CURRENT LOCATION: %s", str);
+    print_room_info(fp);
 
     fclose(fp);
 }
@@ -280,7 +294,7 @@ int main(int argc, char *argv[])
     seed = time(NULL);
     srand(seed);
     start = set_up();
-    printf("%s\n", start);
+    next_room(start);
 
     return 0;
 }
