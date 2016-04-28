@@ -244,32 +244,36 @@ const char* set_up()
     return start_room;
 }
 
-void print_room_info(FILE *room_file)
-{
-    char str[100];
-    char* connections[6];
-    assert(room_file != NULL);
-
-    fseek(room_file, 11, SEEK_CUR);
-    fgets(str, sizeof(str), room_file);
-    printf("CURRENT LOCATION: %s", str);
-
-    //fseek(room_file, 14, SEEK_CUR);
-    char str1[10], str2[10], str3[10];
-    // fgets(str, sizeof(str), room_file);
-    fscanf(room_file, "%s %s %s", str1, str2, str3);
-    printf("POSSIBLE CONNECTIONS: %s, %s, %s.", str1, str2, str3);
-}
-
 const char* next_room(const char* file_name)
 {
     char str[30];
     FILE *fp;
+    const char* ptr;
+    const char* connections[6];
+    int i = 0;
     fp = fopen(file_name, "r");  // check fp
     assert(fp != NULL);
 
-    print_room_info(fp);
-
+    // http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
+    while (fgets(str, sizeof str, fp) != NULL) {
+        ptr = strchr(str, ':');
+        if (starts_with(str, "ROOM NAME") == 0 && ptr) {
+            printf("%s\n", ptr+2);
+        }
+        if (starts_with(str, "CONNECTION") == 0 && ptr) {
+            // printf("%s\n", ptr+2);
+            connections[i] = ptr+2; // NOPE DOESN'T WORK
+            i++;
+        }
+        if (starts_with(str, "ROOM TYPE") == 0 && ptr) {
+            printf("%s\n", ptr+2);
+        }
+    }
+    for (i = 0; i < 6; i++) {
+        if (connections[i] != NULL) {
+            printf("%s\n", connections[i]);
+        }
+    }
     fclose(fp);
 }
 
