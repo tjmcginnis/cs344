@@ -10,6 +10,7 @@
 #define MAX_CONNECTIONS 6
 #define ROOM_CHOICES 10
 #define GAME_ROOMS 7
+#define MAX_NAME_LENGTH 10
 
 const char* ROOM_NAMES[ROOM_CHOICES] = {
     "Coruscant",
@@ -244,37 +245,62 @@ const char* set_up()
     return start_room;
 }
 
+int check_guess(char* guess, char* valid_guesses[], int num_valid_guesses)
+{
+    int i;
+    for (i = 0; i < num_valid_guesses; i++) {
+        if (starts_with(guess, valid_guesses[i]) == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
 const char* next_room(const char* file_name)
 {
     char str[30];
+    char* next;
     FILE *fp;
     const char* ptr;
-    const char* connections[6];
+    char* connections[MAX_CONNECTIONS];
     int i = 0;
+    int j;
+    char input[MAX_NAME_LENGTH];
     fp = fopen(file_name, "r");  // check fp
     assert(fp != NULL);
 
-    // http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
     while (fgets(str, sizeof str, fp) != NULL) {
+        // http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
         ptr = strchr(str, ':');
         if (starts_with(str, "ROOM NAME") == 0 && ptr) {
             printf("%s\n", ptr+2);
         }
         if (starts_with(str, "CONNECTION") == 0 && ptr) {
-            // printf("%s\n", ptr+2);
-            connections[i] = ptr+2; // NOPE DOESN'T WORK
+            connections[i] = malloc(sizeof(str));
+            printf("Copying %s\n", ptr+2);
+            strncpy(connections[i], ptr+2, 10);
             i++;
         }
         if (starts_with(str, "ROOM TYPE") == 0 && ptr) {
             printf("%s\n", ptr+2);
         }
     }
-    for (i = 0; i < 6; i++) {
-        if (connections[i] != NULL) {
-            printf("%s\n", connections[i]);
-        }
+
+    // get users next move
+    fgets(input, MAX_NAME_LENGTH, stdin);
+    // sanitize and check user input
+    // check that string user entered is a valid choise
+    int res = check_guess(input, connections, i);
+    if (res == 0)
+        next = input;
+
+    for (j = 0; j < i; j++) {
+        free(connections[j]);
     }
     fclose(fp);
+
+    // return next move
+    return next;
 }
 
 int main(int argc, char *argv[])
@@ -298,7 +324,9 @@ int main(int argc, char *argv[])
     seed = time(NULL);
     srand(seed);
     start = set_up();
-    next_room(start);
+    start = next_room(start);
+    printf("%s\n", start);
+    printf("%i\n", strlen(start));
 
     return 0;
 }
