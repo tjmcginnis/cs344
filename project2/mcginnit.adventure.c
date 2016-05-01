@@ -262,10 +262,14 @@ char* next_room(const char* file_name)
     int j;
     FILE *fp;
     char *next;
+    char current[11];
     char str[30];
     char buffer[256];
     const char* ptr;
     char* connections[MAX_CONNECTIONS];
+    char* tmp;
+
+    next = NULL;
 
     fp = fopen(file_name, "r");  // check fp
     assert(fp != NULL);
@@ -274,7 +278,7 @@ char* next_room(const char* file_name)
         // http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
         ptr = strchr(str, ':');
         if (starts_with(str, "ROOM NAME") == 0 && ptr) {
-            printf("CURRENT LOCATION: %s", ptr+2);
+            strncpy(current, ptr+2, 11);
         }
         if (starts_with(str, "CONNECTION") == 0 && ptr) {
             connections[i] = malloc(sizeof(char) * 11);
@@ -287,22 +291,29 @@ char* next_room(const char* file_name)
         }
     }
 
-    printf("POSSIBLE CONNECTIONS: ");
-    for (j = 0; j < i; j++) {
-        printf("%s", strtok(connections[j], "\n"));
-        if (j < i - 1)
-            printf(", ");
-        else
-            printf(".\n");
-    }
+    do {
+        printf("CURRENT LOCATION: %s", current);
+        printf("POSSIBLE CONNECTIONS: ");
+        for (j = 0; j < i; j++) {
+            printf("%s", strtok(connections[j], "\n"));
+            if (j < i - 1)
+                printf(", ");
+            else
+                printf(".\n");
+        }
 
-    // get users next move
-    printf("WHERE TO? >");
-    fgets(buffer, sizeof(buffer), stdin);
-    char* tmp;
-    next = check_guess(buffer, connections, i);
-    tmp = malloc(sizeof(char) * (strlen(next)+1));
-    memcpy(tmp, strtok(next, "\n"), strlen(next)+1);
+        // get users next move
+        printf("WHERE TO? >");
+        fgets(buffer, sizeof(buffer), stdin);
+        next = check_guess(buffer, connections, i);
+        printf("\n");
+        if (next == NULL) {
+            printf("HUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n");
+        } else {
+            tmp = malloc(sizeof(char) * (strlen(next)+1));
+            memcpy(tmp, strtok(next, "\n"), strlen(next)+1);
+        }
+    } while (next == NULL);
 
     for (j = 0; j < i; j++) {
         free(connections[j]);
