@@ -245,27 +245,29 @@ const char* set_up()
     return start_room;
 }
 
-int check_guess(char* guess, char* valid_guesses[], int num_valid_guesses)
+char* check_guess(char* guess, char* valid_guesses[], int num_valid_guesses)
 {
     int i;
     for (i = 0; i < num_valid_guesses; i++) {
         if (starts_with(guess, valid_guesses[i]) == 0) {
-            return 0;
+            return valid_guesses[i];
         }
     }
-    return 1;
+    return NULL;
 }
 
-const char* next_room(const char* file_name)
+char* next_room(const char* file_name)
 {
-    char str[30];
-    char* next;
-    FILE *fp;
-    const char* ptr;
-    char* connections[MAX_CONNECTIONS];
     int i = 0;
     int j;
-    char input[MAX_NAME_LENGTH];
+    FILE *fp;
+    char *next;
+    char str[30];
+    char buffer[256];
+    const char* ptr;
+    char* connections[MAX_CONNECTIONS];
+
+    printf("file_name: %s\n", file_name);
     fp = fopen(file_name, "r");  // check fp
     assert(fp != NULL);
 
@@ -276,9 +278,10 @@ const char* next_room(const char* file_name)
             printf("%s\n", ptr+2);
         }
         if (starts_with(str, "CONNECTION") == 0 && ptr) {
-            connections[i] = malloc(sizeof(str));
+            connections[i] = malloc(sizeof(char) * (strlen(ptr+2)+1));
             printf("Copying %s\n", ptr+2);
-            strncpy(connections[i], ptr+2, 10);
+            strncpy(connections[i], ptr+2, strlen(ptr+2)+1);
+            connections[i][strlen(ptr+2) + 1] = '\0';
             i++;
         }
         if (starts_with(str, "ROOM TYPE") == 0 && ptr) {
@@ -287,12 +290,29 @@ const char* next_room(const char* file_name)
     }
 
     // get users next move
-    fgets(input, MAX_NAME_LENGTH, stdin);
+    fgets(buffer, sizeof(buffer), stdin);
+    //int len = strlen(buffer);
+    //printf("%d\n", len);
+    //buffer[len] = 0;
     // sanitize and check user input
     // check that string user entered is a valid choise
-    int res = check_guess(input, connections, i);
-    if (res == 0)
-        next = input;
+    char* tmp;
+    next = check_guess(buffer, connections, i);
+    tmp = malloc(sizeof(char) * strlen(next));
+    strncpy(tmp, next, strlen(next));
+    printf("%s\n", next);
+    /*if (res == 0)
+        next = malloc(tmp * sizeof(char*));
+        assert (next != NULL);
+        memset(next, '\0', MAX_NAME_LENGTH+1);
+        //printf("size of next: %d\n", sizeof(next));
+        strncpy(next, buffer, MAX_NAME_LENGTH);
+        int len = strlen(next) - 1;
+        //printf("last index of %s: %d\n", next, len);
+        if (next[len] == '\n')
+            next[len] = '\0';*/
+
+
 
     for (j = 0; j < i; j++) {
         free(connections[j]);
@@ -300,7 +320,7 @@ const char* next_room(const char* file_name)
     fclose(fp);
 
     // return next move
-    return next;
+    return tmp;
 }
 
 int main(int argc, char *argv[])
@@ -310,6 +330,7 @@ int main(int argc, char *argv[])
     int stat;
     char* dir_name;
     const char* start;
+    char* next;
 
     pid = getpid();
     dir_name = malloc(sizeof(char) * 30);
@@ -324,9 +345,9 @@ int main(int argc, char *argv[])
     seed = time(NULL);
     srand(seed);
     start = set_up();
-    start = next_room(start);
-    printf("%s\n", start);
-    printf("%i\n", strlen(start));
+    next = next_room(start);
+    printf("next: %s", next);
+    free(next);
 
     return 0;
 }
