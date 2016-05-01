@@ -281,6 +281,7 @@ char* next_room(const char* file_name)
             strncpy(current, ptr+2, 11);
         }
         if (starts_with(str, "CONNECTION") == 0 && ptr) {
+            printf("malloc @ 285\n");
             connections[i] = malloc(sizeof(char) * 11);
            // printf("Copying %s\n", ptr+2);  // DELETE ME
             strncpy(connections[i], ptr+2, 11);
@@ -288,6 +289,14 @@ char* next_room(const char* file_name)
         }
         if (starts_with(str, "ROOM TYPE") == 0 && ptr) {
             //printf("%s\n", ptr+2);
+            if (starts_with(ptr+2, "END_ROOM") == 0) {
+                printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
+                for (j = 0; j < i; j++) {
+                    printf("free malloc from 285\n");
+                    free(connections[j]);
+                }
+                return NULL;
+            }
         }
     }
 
@@ -306,16 +315,20 @@ char* next_room(const char* file_name)
         printf("WHERE TO? >");
         fgets(buffer, sizeof(buffer), stdin);
         next = check_guess(buffer, connections, i);
+        printf("malloc @ 273\n");
+        tmp = malloc(sizeof(char) * (strlen(next)+1));
+        assert(tmp != NULL);
         printf("\n");
         if (next == NULL) {
             printf("HUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n");
+            free(tmp);
         } else {
-            tmp = malloc(sizeof(char) * (strlen(next)+1));
             memcpy(tmp, strtok(next, "\n"), strlen(next)+1);
         }
     } while (next == NULL);
 
     for (j = 0; j < i; j++) {
+        printf("free @ 285\n");
         free(connections[j]);
     }
     fclose(fp);
@@ -331,7 +344,7 @@ int main(int argc, char *argv[])
     int stat;
     char* dir_name;
     const char* start;
-    char* next;
+    char* next = "tmp";
     char* tmp;
 
     pid = getpid();
@@ -348,12 +361,13 @@ int main(int argc, char *argv[])
     srand(seed);
     start = set_up();
     next = next_room(start);
-    printf("next: %s\n", next);
+    while (next != NULL) {
+        tmp = next;
+        next = next_room(next);
+        printf("free @ 273\n");
+        free(tmp);
+    };
 
-    tmp = next;
-    next = next_room(next);
-    free(tmp);
-    printf("next: %s\n", next);
     free(next);
 
     return 0;
