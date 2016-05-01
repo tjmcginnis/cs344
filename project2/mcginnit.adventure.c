@@ -267,7 +267,6 @@ char* next_room(const char* file_name)
     const char* ptr;
     char* connections[MAX_CONNECTIONS];
 
-    printf("file_name: %s\n", file_name);
     fp = fopen(file_name, "r");  // check fp
     assert(fp != NULL);
 
@@ -275,44 +274,35 @@ char* next_room(const char* file_name)
         // http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
         ptr = strchr(str, ':');
         if (starts_with(str, "ROOM NAME") == 0 && ptr) {
-            printf("%s\n", ptr+2);
+            printf("CURRENT LOCATION: %s", ptr+2);
         }
         if (starts_with(str, "CONNECTION") == 0 && ptr) {
-            connections[i] = malloc(sizeof(char) * (strlen(ptr+2)+1));
-            printf("Copying %s\n", ptr+2);
-            strncpy(connections[i], ptr+2, strlen(ptr+2)+1);
-            connections[i][strlen(ptr+2) + 1] = '\0';
+            connections[i] = malloc(sizeof(char) * 11);
+           // printf("Copying %s\n", ptr+2);  // DELETE ME
+            strncpy(connections[i], ptr+2, 11);
             i++;
         }
         if (starts_with(str, "ROOM TYPE") == 0 && ptr) {
-            printf("%s\n", ptr+2);
+            //printf("%s\n", ptr+2);
         }
     }
 
+    printf("POSSIBLE CONNECTIONS: ");
+    for (j = 0; j < i; j++) {
+        printf("%s", strtok(connections[j], "\n"));
+        if (j < i - 1)
+            printf(", ");
+        else
+            printf(".\n");
+    }
+
     // get users next move
+    printf("WHERE TO? >");
     fgets(buffer, sizeof(buffer), stdin);
-    //int len = strlen(buffer);
-    //printf("%d\n", len);
-    //buffer[len] = 0;
-    // sanitize and check user input
-    // check that string user entered is a valid choise
     char* tmp;
     next = check_guess(buffer, connections, i);
-    tmp = malloc(sizeof(char) * strlen(next));
-    strncpy(tmp, next, strlen(next));
-    printf("%s\n", next);
-    /*if (res == 0)
-        next = malloc(tmp * sizeof(char*));
-        assert (next != NULL);
-        memset(next, '\0', MAX_NAME_LENGTH+1);
-        //printf("size of next: %d\n", sizeof(next));
-        strncpy(next, buffer, MAX_NAME_LENGTH);
-        int len = strlen(next) - 1;
-        //printf("last index of %s: %d\n", next, len);
-        if (next[len] == '\n')
-            next[len] = '\0';*/
-
-
+    tmp = malloc(sizeof(char) * (strlen(next)+1));
+    memcpy(tmp, strtok(next, "\n"), strlen(next)+1);
 
     for (j = 0; j < i; j++) {
         free(connections[j]);
@@ -331,6 +321,7 @@ int main(int argc, char *argv[])
     char* dir_name;
     const char* start;
     char* next;
+    char* tmp;
 
     pid = getpid();
     dir_name = malloc(sizeof(char) * 30);
@@ -346,7 +337,12 @@ int main(int argc, char *argv[])
     srand(seed);
     start = set_up();
     next = next_room(start);
-    printf("next: %s", next);
+    printf("next: %s\n", next);
+
+    tmp = next;
+    next = next_room(next);
+    free(tmp);
+    printf("next: %s\n", next);
     free(next);
 
     return 0;
