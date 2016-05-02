@@ -31,6 +31,13 @@ struct Room {
     const char* room_type;
 };
 
+struct Game {
+    const char* start_room;
+    char* next_room;
+    char* next_room_choices[MAX_CONNECTIONS];
+    int num_steps;
+};
+
 struct Room *room_create(const char* room_name, const char* room_type)
 {
     int i;
@@ -124,6 +131,70 @@ void room_write_to_file(struct Room *room)
     fprintf(fp, "ROOM TYPE: %s\n", room->room_type);
 
     fclose(fp);
+}
+
+struct Game* game_create(const char* start_room)
+{
+    int i;
+
+    struct Game* new_game = malloc(sizeof(struct Game));
+    assert(new_game != NULL);
+
+    new_game->start_room = start_room;
+    new_game->num_steps = 0;
+
+    new_game->next_room = malloc(sizeof(char) * 11);
+    assert(new_game->next_room != NULL);
+    memcpy(new_game->next_room, start_room, 11);
+
+    for (i = 0; i < MAX_CONNECTIONS; i++) {
+        new_game->next_room_choices[i] = malloc(sizeof(char) * 11);
+        assert(new_game->next_room_choices[i] != NULL);
+        memset(new_game->next_room_choices[i], 0, 11);
+    }
+
+    return new_game;
+}
+
+void game_destroy(struct Game* game)
+{
+    int i;
+
+    assert(game != NULL);
+    assert(game->next_room != NULL);
+
+    for (i = 0; i < MAX_CONNECTIONS; i++) {
+        assert(game->next_room_choices[i] != NULL);
+        free(game->next_room_choices[i]);
+    }
+
+    free(game->next_room);
+    free(game);
+}
+
+void game_add_to_next_room_choices(struct Game* game, const char* room, int index)
+{
+    memset(game->next_room_choices[index], 0, 11);
+    memcpy(game->next_room_choices[index], room, 11);
+}
+
+void game_set_next_room(struct Game* game, char* next_room)
+{
+    if (check_guess(next_room, game->next_room_choices) == 0) {
+        memset(game->next_room, 0, 11);
+        memcpy(game->next_room, next_room, 11);
+    }
+}
+
+int check_guess(char* next_room, char* choices[])
+{
+    int i;
+    for (i = 0; i < MAX_CONNECTIONS; i++) {
+        if (starts_with(next_room, choices[i]) == 0) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 // http://stackoverflow.com/questions/4770985/how-to-check-if-a-string-starts-with-another-string-in-c
@@ -245,6 +316,7 @@ const char* set_up()
     return start_room;
 }
 
+/*
 char* check_guess(char* guess, char* valid_guesses[], int num_valid_guesses)
 {
     int i;
@@ -254,9 +326,9 @@ char* check_guess(char* guess, char* valid_guesses[], int num_valid_guesses)
         }
     }
     return NULL;
-}
+}*/
 
-char* next_room(const char* file_name)
+void next_room(struct Game* game)
 {
     int i = 0;
     int j;
@@ -269,10 +341,9 @@ char* next_room(const char* file_name)
     char* connections[MAX_CONNECTIONS];
     char* tmp;
 
-    next = NULL;
-
-    fp = fopen(file_name, "r");  // check fp
+    fp = fopen(game->next_room, "r");  // check fp
     assert(fp != NULL);
+
 
     while (fgets(str, sizeof str, fp) != NULL) {
         // http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
@@ -281,25 +352,22 @@ char* next_room(const char* file_name)
             strncpy(current, ptr+2, 11);
         }
         if (starts_with(str, "CONNECTION") == 0 && ptr) {
-            printf("malloc @ 285\n");
-            connections[i] = malloc(sizeof(char) * 11);
            // printf("Copying %s\n", ptr+2);  // DELETE ME
-            strncpy(connections[i], ptr+2, 11);
+            game_add_to_next_room_choices(game, ptr+2, i);
             i++;
         }
         if (starts_with(str, "ROOM TYPE") == 0 && ptr) {
-            //printf("%s\n", ptr+2);
             if (starts_with(ptr+2, "END_ROOM") == 0) {
                 printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
                 for (j = 0; j < i; j++) {
                     printf("free malloc from 285\n");
                     free(connections[j]);
                 }
-                return NULL;
+                //return NULL;
             }
         }
     }
-
+    /*
     do {
         printf("CURRENT LOCATION: %s", current);
         printf("POSSIBLE CONNECTIONS: ");
@@ -314,7 +382,7 @@ char* next_room(const char* file_name)
         // get users next move
         printf("WHERE TO? >");
         fgets(buffer, sizeof(buffer), stdin);
-        next = check_guess(buffer, connections, i);
+        //next = check_guess(buffer, connections, i);
         printf("malloc @ 273\n");
         tmp = malloc(sizeof(char) * (strlen(next)+1));
         assert(tmp != NULL);
@@ -330,11 +398,8 @@ char* next_room(const char* file_name)
     for (j = 0; j < i; j++) {
         printf("free @ 285\n");
         free(connections[j]);
-    }
+    }*/
     fclose(fp);
-
-    // return next move
-    return tmp;
 }
 
 int main(int argc, char *argv[])
@@ -344,9 +409,11 @@ int main(int argc, char *argv[])
     int stat;
     char* dir_name;
     const char* start;
-    char* next = "tmp";
+    char* next;
     char* tmp;
+    struct Game* game;
 
+    /** GOOD **/
     pid = getpid();
     dir_name = malloc(sizeof(char) * 30);
     sprintf(dir_name, "mcginnit.rooms.%i", pid);
@@ -360,15 +427,22 @@ int main(int argc, char *argv[])
     seed = time(NULL);
     srand(seed);
     start = set_up();
-    next = next_room(start);
-    while (next != NULL) {
+    game = game_create(start);
+    printf("%s\n", game->next_room);
+
+    /** **/
+
+    next_room(game);
+    /*
+    do {
         tmp = next;
         next = next_room(next);
         printf("free @ 273\n");
         free(tmp);
-    };
+    } while (next != NULL);
 
-    free(next);
+    free(next);*/
+    game_destroy(game);
 
     return 0;
 }
