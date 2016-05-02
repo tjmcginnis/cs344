@@ -26,16 +26,17 @@ const char* ROOM_NAMES[ROOM_CHOICES] = {
 };
 
 struct Room {
-    const char* room_name;
+    const char  *room_name;
     struct Room *room_connections[MAX_CONNECTIONS];
-    const char* room_type;
+    const char  *room_type;
 };
 
 struct Game {
-    const char* start_room;
-    char* current_room;
-    char* next_room_choices[MAX_CONNECTIONS];
     int num_steps;
+    int finished;
+    char *current_room;
+    char *next_room_choices[MAX_CONNECTIONS];
+    FILE *path_to_victory;
 };
 
 struct Room *room_create(const char* room_name, const char* room_type)
@@ -140,8 +141,8 @@ struct Game* game_create(const char* start_room)
     struct Game* new_game = malloc(sizeof(struct Game));
     assert(new_game != NULL);
 
-    new_game->start_room = start_room;
     new_game->num_steps = 0;
+    new_game->finished = 0;
 
     new_game->current_room = malloc(sizeof(char) * 11);
     assert(new_game->current_room != NULL);
@@ -305,6 +306,7 @@ const char* set_up()
                 start_room = ROOM_NAMES[random_indices[i] - 1];
                 break;
             case GAME_ROOMS - 1:
+                printf("END ROOM: %s\n", ROOM_NAMES[random_indices[i] - 1]);
                 room_type = "END_ROOM";
                 break;
             default:
@@ -326,59 +328,55 @@ const char* set_up()
 
 void next_room(struct Game* game)
 {
-    int valid_guess = 0;
-    int i = 0;
-    int j;
+    int i, j, keep_guessing;
     FILE* fp;
-    char* next;
-    char* copy;
-    char str[30];
     char buffer[256];
+    char str[30];
+    char* next;
     const char* ptr;
-    char* connections[MAX_CONNECTIONS];
-    char* tmp;
 
+    i = 0;
+    keep_guessing = 1;
     fp = fopen(game->current_room, "r");  // check fp
     assert(fp != NULL);
-
 
     while (fgets(str, sizeof str, fp) != NULL) {
         // http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
         ptr = strchr(str, ':');
+        ptr += 2;
         if (starts_with(str, "CONNECTION") == 0 && ptr) {
-            //opy = strtok(strdup(ptr+2), "\n");
-            game_add_to_next_room_choices(game, ptr+2, i);
-            //free(copy);
-            i++;
+            game_add_to_next_room_choices(game, ptr, i);
+            i += 1;
         }
         if (starts_with(str, "ROOM TYPE") == 0 && ptr) {
-            if (starts_with(ptr+2, "END_ROOM") == 0) {
-                printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
+            if (starts_with(ptr, "END_ROOM") == 0) {
+                game->finished = 1;
+                keep_guessing = 0;
             }
         }
     }
 
-    while(valid_guess == 0) {
+    while(keep_guessing == 1) {
         fseek(stdin, 0, SEEK_END);
         printf("CURRENT LOCATION: %s\n", game->current_room);
         printf("POSSIBLE CONNECTIONS: ");
         for (j = 0; j < i; j++) {
             printf("%s", game->next_room_choices[j]);
-            if (j < i - 1)
+            if (j < i - 1) {
                 printf(", ");
-            else
+            } else {
                 printf(".\n");
+            }
         }
 
-        // get users next move
         printf("WHERE TO? >");
         fgets(buffer, sizeof(buffer), stdin);
-        //next = check_guess(buffer, connections, i);
         if (check_guess(buffer, game) == 0) {
             game_set_current_room(game, strtok(buffer, "\n"));
-            valid_guess = 1;
+            keep_guessing = 0;
+            game->num_steps += 1;
         } else {
-            printf("HUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.");
+            printf("\nHUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.\n");
         }
         printf("\n");
     }
@@ -394,8 +392,6 @@ int main(int argc, char *argv[])
     int stat;
     char* dir_name;
     const char* start;
-    char* next;
-    char* tmp;
     struct Game* game;
 
     /** GOOD **/
@@ -413,21 +409,14 @@ int main(int argc, char *argv[])
     srand(seed);
     start = set_up();
     game = game_create(start);
-    printf("START: %s\n", game->current_room);
 
-    /** **/
-
-    next_room(game);
-    printf("NEXT: %s\n", game->current_room);
-    /*
     do {
-        tmp = next;
-        next = next_room(next);
-        printf("free @ 273\n");
-        free(tmp);
-    } while (next != NULL);
+        next_room(game);
+    } while (game->finished == 0);
 
-    free(next);*/
+    printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
+    printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n", game->num_steps);
+
     game_destroy(game);
 
     return 0;
