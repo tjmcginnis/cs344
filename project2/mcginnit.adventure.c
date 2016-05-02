@@ -34,7 +34,6 @@ struct Room {
 struct Game {
     const char* start_room;
     char* current_room;
-    char* next_room;
     char* next_room_choices[MAX_CONNECTIONS];
     int num_steps;
 };
@@ -148,9 +147,6 @@ struct Game* game_create(const char* start_room)
     assert(new_game->current_room != NULL);
     memcpy(new_game->current_room, start_room, 11);
 
-    new_game->next_room = malloc(sizeof(char) * 11);
-    assert(new_game->next_room != NULL);
-
     for (i = 0; i < MAX_CONNECTIONS; i++) {
         new_game->next_room_choices[i] = malloc(sizeof(char) * 11);
         assert(new_game->next_room_choices[i] != NULL);
@@ -160,13 +156,20 @@ struct Game* game_create(const char* start_room)
     return new_game;
 }
 
+void game_clear_room_choices(struct Game* game)
+{
+    int i;
+    for (i = 0; i < MAX_CONNECTIONS; i++) {
+        memset(game->next_room_choices[i], 0, 11);
+    }
+}
+
 void game_destroy(struct Game* game)
 {
     int i;
 
     assert(game != NULL);
     assert(game->current_room != NULL);
-    assert(game->next_room != NULL);
 
     for (i = 0; i < MAX_CONNECTIONS; i++) {
         assert(game->next_room_choices[i] != NULL);
@@ -174,29 +177,28 @@ void game_destroy(struct Game* game)
     }
 
     free(game->current_room);
-    free(game->next_room);
     free(game);
 }
 
-void game_add_to_next_room_choices(struct Game* game, char* room, int index)
+void game_add_to_next_room_choices(struct Game* game, const char* room, int index)
 {
     memset(game->next_room_choices[index], 0, 11);
     memcpy(game->next_room_choices[index], room, 11);
+    game->next_room_choices[index] = strtok(game->next_room_choices[index], "\n");
 }
 
-void game_set_next_room(struct Game* game, char* next_room)
+void game_set_current_room(struct Game* game, char* next_room)
 {
-    if (check_guess(next_room, game->next_room_choices) == 0) {
-        memset(game->next_room, 0, 11);
-        memcpy(game->next_room, next_room, 11);
-    }
+    memset(game->current_room, 0, 11);
+    memcpy(game->current_room, next_room, 11);
 }
 
-int check_guess(char* next_room, char* choices[])
+int check_guess(char* next_room, struct Game* game)
 {
     int i;
     for (i = 0; i < MAX_CONNECTIONS; i++) {
-        if (starts_with(next_room, choices[i]) == 0) {
+        char* choice = game->next_room_choices[i];
+        if (starts_with(next_room, choice) == 0 && strcmp(choice, "") != 0) {
             return 0;
         }
     }
@@ -322,20 +324,9 @@ const char* set_up()
     return start_room;
 }
 
-/*
-char* check_guess(char* guess, char* valid_guesses[], int num_valid_guesses)
-{
-    int i;
-    for (i = 0; i < num_valid_guesses; i++) {
-        if (starts_with(guess, valid_guesses[i]) == 0) {
-            return valid_guesses[i];
-        }
-    }
-    return NULL;
-}*/
-
 void next_room(struct Game* game)
 {
+    int valid_guess = 0;
     int i = 0;
     int j;
     FILE* fp;
@@ -355,9 +346,9 @@ void next_room(struct Game* game)
         // http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
         ptr = strchr(str, ':');
         if (starts_with(str, "CONNECTION") == 0 && ptr) {
-            copy = strtok(strdup(ptr+2), "\n");
-            game_add_to_next_room_choices(game, copy, i);
-            free(copy);
+            //opy = strtok(strdup(ptr+2), "\n");
+            game_add_to_next_room_choices(game, ptr+2, i);
+            //free(copy);
             i++;
         }
         if (starts_with(str, "ROOM TYPE") == 0 && ptr) {
@@ -367,7 +358,8 @@ void next_room(struct Game* game)
         }
     }
 
-    //do {
+    while(valid_guess == 0) {
+        fseek(stdin, 0, SEEK_END);
         printf("CURRENT LOCATION: %s\n", game->current_room);
         printf("POSSIBLE CONNECTIONS: ");
         for (j = 0; j < i; j++) {
@@ -377,28 +369,21 @@ void next_room(struct Game* game)
             else
                 printf(".\n");
         }
-       /*
 
         // get users next move
         printf("WHERE TO? >");
         fgets(buffer, sizeof(buffer), stdin);
         //next = check_guess(buffer, connections, i);
-        printf("malloc @ 273\n");
-        tmp = malloc(sizeof(char) * (strlen(next)+1));
-        assert(tmp != NULL);
-        printf("\n");
-        if (next == NULL) {
-            printf("HUH? I DON'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n");
-            free(tmp);
+        if (check_guess(buffer, game) == 0) {
+            game_set_current_room(game, strtok(buffer, "\n"));
+            valid_guess = 1;
         } else {
-            memcpy(tmp, strtok(next, "\n"), strlen(next)+1);
+            printf("HUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.");
         }
-    } while (next == NULL);
+        printf("\n");
+    }
 
-    for (j = 0; j < i; j++) {
-        printf("free @ 285\n");
-        free(connections[j]);
-    }*/
+    game_clear_room_choices(game);
     fclose(fp);
 }
 
@@ -433,6 +418,7 @@ int main(int argc, char *argv[])
     /** **/
 
     next_room(game);
+    printf("NEXT: %s\n", game->current_room);
     /*
     do {
         tmp = next;
