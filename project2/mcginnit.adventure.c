@@ -33,6 +33,7 @@ struct Room {
 
 struct Game {
     const char* start_room;
+    char* current_room;
     char* next_room;
     char* next_room_choices[MAX_CONNECTIONS];
     int num_steps;
@@ -143,9 +144,12 @@ struct Game* game_create(const char* start_room)
     new_game->start_room = start_room;
     new_game->num_steps = 0;
 
+    new_game->current_room = malloc(sizeof(char) * 11);
+    assert(new_game->current_room != NULL);
+    memcpy(new_game->current_room, start_room, 11);
+
     new_game->next_room = malloc(sizeof(char) * 11);
     assert(new_game->next_room != NULL);
-    memcpy(new_game->next_room, start_room, 11);
 
     for (i = 0; i < MAX_CONNECTIONS; i++) {
         new_game->next_room_choices[i] = malloc(sizeof(char) * 11);
@@ -161,6 +165,7 @@ void game_destroy(struct Game* game)
     int i;
 
     assert(game != NULL);
+    assert(game->current_room != NULL);
     assert(game->next_room != NULL);
 
     for (i = 0; i < MAX_CONNECTIONS; i++) {
@@ -168,11 +173,12 @@ void game_destroy(struct Game* game)
         free(game->next_room_choices[i]);
     }
 
+    free(game->current_room);
     free(game->next_room);
     free(game);
 }
 
-void game_add_to_next_room_choices(struct Game* game, const char* room, int index)
+void game_add_to_next_room_choices(struct Game* game, char* room, int index)
 {
     memset(game->next_room_choices[index], 0, 11);
     memcpy(game->next_room_choices[index], room, 11);
@@ -332,52 +338,46 @@ void next_room(struct Game* game)
 {
     int i = 0;
     int j;
-    FILE *fp;
-    char *next;
-    char current[11];
+    FILE* fp;
+    char* next;
+    char* copy;
     char str[30];
     char buffer[256];
     const char* ptr;
     char* connections[MAX_CONNECTIONS];
     char* tmp;
 
-    fp = fopen(game->next_room, "r");  // check fp
+    fp = fopen(game->current_room, "r");  // check fp
     assert(fp != NULL);
 
 
     while (fgets(str, sizeof str, fp) != NULL) {
         // http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
         ptr = strchr(str, ':');
-        if (starts_with(str, "ROOM NAME") == 0 && ptr) {
-            strncpy(current, ptr+2, 11);
-        }
         if (starts_with(str, "CONNECTION") == 0 && ptr) {
-           // printf("Copying %s\n", ptr+2);  // DELETE ME
-            game_add_to_next_room_choices(game, ptr+2, i);
+            copy = strtok(strdup(ptr+2), "\n");
+            game_add_to_next_room_choices(game, copy, i);
+            free(copy);
             i++;
         }
         if (starts_with(str, "ROOM TYPE") == 0 && ptr) {
             if (starts_with(ptr+2, "END_ROOM") == 0) {
                 printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
-                for (j = 0; j < i; j++) {
-                    printf("free malloc from 285\n");
-                    free(connections[j]);
-                }
-                //return NULL;
             }
         }
     }
-    /*
-    do {
-        printf("CURRENT LOCATION: %s", current);
+
+    //do {
+        printf("CURRENT LOCATION: %s\n", game->current_room);
         printf("POSSIBLE CONNECTIONS: ");
         for (j = 0; j < i; j++) {
-            printf("%s", strtok(connections[j], "\n"));
+            printf("%s", game->next_room_choices[j]);
             if (j < i - 1)
                 printf(", ");
             else
                 printf(".\n");
         }
+       /*
 
         // get users next move
         printf("WHERE TO? >");
@@ -428,7 +428,7 @@ int main(int argc, char *argv[])
     srand(seed);
     start = set_up();
     game = game_create(start);
-    printf("%s\n", game->next_room);
+    printf("START: %s\n", game->current_room);
 
     /** **/
 
