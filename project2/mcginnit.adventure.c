@@ -36,7 +36,8 @@ struct Game {
     int finished;
     char *current_room;
     char *next_room_choices[MAX_CONNECTIONS];
-    FILE *path_to_victory;
+    char *path_file_name;
+    FILE *path_file;
 };
 
 struct Room *room_create(const char* room_name, const char* room_type)
@@ -148,6 +149,9 @@ struct Game* game_create(const char* start_room)
     assert(new_game->current_room != NULL);
     memcpy(new_game->current_room, start_room, 11);
 
+    new_game->path_file_name = "victory_path";
+    new_game->path_file = fopen(new_game->path_file_name, "a+");
+
     for (i = 0; i < MAX_CONNECTIONS; i++) {
         new_game->next_room_choices[i] = malloc(sizeof(char) * 11);
         assert(new_game->next_room_choices[i] != NULL);
@@ -167,15 +171,20 @@ void game_clear_room_choices(struct Game* game)
 
 void game_destroy(struct Game* game)
 {
-    int i;
+    int i, stat;
 
     assert(game != NULL);
     assert(game->current_room != NULL);
+    assert(game->path_file != NULL);
 
     for (i = 0; i < MAX_CONNECTIONS; i++) {
         assert(game->next_room_choices[i] != NULL);
         free(game->next_room_choices[i]);
     }
+
+    fclose(game->path_file);
+    stat = unlink(game->path_file_name);
+    assert(stat == 0);
 
     free(game->current_room);
     free(game);
@@ -192,6 +201,24 @@ void game_set_current_room(struct Game* game, char* next_room)
 {
     memset(game->current_room, 0, 11);
     memcpy(game->current_room, next_room, 11);
+}
+
+void game_add_to_path(struct Game* game, const char* room_name)
+{
+    int stat;
+    stat = fputs(room_name, game->path_file);
+    assert(stat >= 0);
+    stat = fputs("\n", game->path_file);
+    assert(stat >= 0);
+}
+
+void game_print_path(struct Game* game)
+{
+    char str[30];
+    rewind(game->path_file);
+    while (fgets(str, sizeof str, game->path_file) != NULL) {
+        printf("%s", str);
+    }
 }
 
 int check_guess(char* next_room, struct Game* game)
@@ -306,7 +333,6 @@ const char* set_up()
                 start_room = ROOM_NAMES[random_indices[i] - 1];
                 break;
             case GAME_ROOMS - 1:
-                printf("END ROOM: %s\n", ROOM_NAMES[random_indices[i] - 1]);
                 room_type = "END_ROOM";
                 break;
             default:
@@ -373,6 +399,7 @@ void next_room(struct Game* game)
         fgets(buffer, sizeof(buffer), stdin);
         if (check_guess(buffer, game) == 0) {
             game_set_current_room(game, strtok(buffer, "\n"));
+            game_add_to_path(game, game->current_room);
             keep_guessing = 0;
             game->num_steps += 1;
         } else {
@@ -416,6 +443,7 @@ int main(int argc, char *argv[])
 
     printf("YOU HAVE FOUND THE END ROOM. CONGRATULATIONS!\n");
     printf("YOU TOOK %d STEPS. YOUR PATH TO VICTORY WAS:\n", game->num_steps);
+    game_print_path(game);
 
     game_destroy(game);
 
