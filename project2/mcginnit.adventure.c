@@ -1,9 +1,18 @@
+/*
+ * Author: Tyler McGinnis
+ * CS 344, Section 400
+ * Spring 2016
+ *
+ * file: mcginnit.adventure.c
+ * description:
+ *  a small adventure guessing game
+ */
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h> // getpid()
-#include <sys/stat.h> // mkdir()
-#include <assert.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <assert.h>
 
 
 #define MIN_CONNECTIONS 3
@@ -12,6 +21,8 @@
 #define GAME_ROOMS 7
 #define MAX_NAME_LENGTH 10
 
+
+/* Potential room names for game rooms */
 const char* ROOM_NAMES[ROOM_CHOICES] = {
     "Coruscant",
     "Tatooine",
@@ -25,12 +36,14 @@ const char* ROOM_NAMES[ROOM_CHOICES] = {
     "Ryloth"
 };
 
+/* A game room */
 struct Room {
     const char  *room_name;
     struct Room *room_connections[MAX_CONNECTIONS];
     const char  *room_type;
 };
 
+/* A game instance */
 struct Game {
     int num_steps;
     int finished;
@@ -40,16 +53,31 @@ struct Game {
     FILE *path_file;
 };
 
-struct Room *room_create(const char* room_name, const char* room_type)
+
+/*
+ * Create a new struct Room *
+ *
+ * @param room_name
+ *  The room's name
+ * @param room_type
+ *  The room's type (START_ROOM, MID_ROOM, or END_ROOM)
+ *
+ * Return a pointer to a struct Room
+ */
+struct Room *room_create(const char *room_name, const char *room_type)
 {
     int i;
     struct Room *new_room = malloc(sizeof(struct Room));
 
-    assert(new_room != NULL);
+    assert(new_room != NULL);  // check malloc successful
 
     new_room->room_name = room_name;
     new_room->room_type = room_type;
 
+    /*
+     * Initialize room's connections to NULL
+     * Later used to check that a connection is present
+     */
     for (i = 0; i < MAX_CONNECTIONS; i++) {
         new_room->room_connections[i] = NULL;
     }
@@ -57,27 +85,54 @@ struct Room *room_create(const char* room_name, const char* room_type)
     return new_room;
 }
 
+
+/*
+ * Destroy a struct Room *
+ *
+ * @param room
+ *  The room to destroy
+ */
 void room_destroy(struct Room *room)
 {
     assert(room != NULL);
     free(room);
 }
 
+
+/*
+ * Count the number of connections to a room
+ *
+ * @param room
+ *  The room to count connections to
+ *
+ * Return an integer representing the number of connections
+ */
 int count_connections(struct Room *room)
 {
-    int i;
-    int count = 0;
+    int i, count;
 
+    count = 0;
     assert(room != NULL);
 
     for (i = 0; i < MAX_CONNECTIONS; i++) {
-        if (room->room_connections[i] != NULL) {
+        if (room->room_connections[i] != NULL) {  // check connection exists
             count += 1;
         }
     }
     return count;
 }
 
+
+/*
+ * Check if two rooms are connected
+ *
+ * @param room
+ *  The first room
+ * @param connection
+ *  The second room
+ *
+ * Return 0 if connected, 1 otherwise
+ */
 int check_connection(struct Room *room, struct Room *connection)
 {
     int i;
@@ -93,25 +148,54 @@ int check_connection(struct Room *room, struct Room *connection)
     return 1;
 }
 
+
+/*
+ * Connect two rooms
+ *
+ * @param room
+ *  The first room
+ * @param connection
+ *  The second room
+ */
 void add_connection(struct Room *room, struct Room *connection)
 {
+    int different, room_one_count, room_two_count, connected;
+
     assert(room != NULL);
     assert(connection != NULL);
 
-    int different = room == connection ? 1 : 0;
-    int room_one_count = count_connections(room);
-    int room_two_count = count_connections(connection);
-    int connected = check_connection(room, connection);
+    /* check that room and connection are not the same */
+    different = room == connection ? 1 : 0;
+    /* count room's connection */
+    room_one_count = count_connections(room);
+    /* count connection's connection */
+    room_two_count = count_connections(connection);
+    /* check if room and connection are already connected */
+    connected = check_connection(room, connection);
 
-    if (room_one_count < 6 &&
-        room_two_count < 6 &&
+    if (room_one_count < MAX_CONNECTIONS &&
+        room_two_count < MAX_CONNECTIONS &&
         connected     == 1 &&
         different     == 0) {
+        /*
+         * if rooms are:
+         *  unique
+         *  have less than MAX_CONNECTIONS
+         *  are not already connected
+         * then create mutual connection
+         * */
         room->room_connections[room_one_count] = connection;
         connection->room_connections[room_two_count] = room;
     }
 }
 
+
+/*
+ * Write a room's data to a file
+ *
+ * @param room
+ *  The room to write
+ */
 void room_write_to_file(struct Room *room)
 {
     int i;
@@ -119,23 +203,37 @@ void room_write_to_file(struct Room *room)
 
     fp = fopen(room->room_name, "w+"); // PERMISSIONS // check not null
 
-    assert(fp != NULL);
+    assert(fp   != NULL);
     assert(room != NULL);
 
+    /* write room name to file */
     fprintf(fp, "ROOM NAME: %s\n", room->room_name);
 
+    /* write each connecting room to file on separate lines */
     for (i = 0; i < MAX_CONNECTIONS; i++) {
         if (room->room_connections[i] != NULL) {
-            fprintf(fp, "CONNECTION %i: %s\n", i+1, room->room_connections[i]->room_name);
+            fprintf(fp,
+                    "CONNECTION %i: %s\n",
+                    i+1,
+                    room->room_connections[i]->room_name
+            );
         }
     }
 
+    /* write room type to file */
     fprintf(fp, "ROOM TYPE: %s\n", room->room_type);
 
     fclose(fp);
 }
 
-struct Game* game_create(const char* start_room)
+
+/*
+ * Create a new game instance
+ *
+ * @param start_room
+ *  The starting room for the game
+ */
+struct Game *game_create(const char *start_room)
 {
     int i;
 
@@ -147,21 +245,25 @@ struct Game* game_create(const char* start_room)
 
     new_game->current_room = malloc(sizeof(char) * 11);
     assert(new_game->current_room != NULL);
+    /* current room is the starting room */
     memcpy(new_game->current_room, start_room, 11);
 
+    /* create file to store path traversed */
     new_game->path_file_name = "victory_path";
     new_game->path_file = fopen(new_game->path_file_name, "a+");
 
+    /* allocate space for MAX_CONNECTIONS room choices */
     for (i = 0; i < MAX_CONNECTIONS; i++) {
         new_game->next_room_choices[i] = malloc(sizeof(char) * 11);
         assert(new_game->next_room_choices[i] != NULL);
+        /* initialize memory to \0 */
         memset(new_game->next_room_choices[i], 0, 11);
     }
 
     return new_game;
 }
 
-void game_clear_room_choices(struct Game* game)
+void game_clear_room_choices(struct Game *game)
 {
     int i;
     for (i = 0; i < MAX_CONNECTIONS; i++) {
@@ -169,7 +271,7 @@ void game_clear_room_choices(struct Game* game)
     }
 }
 
-void game_destroy(struct Game* game)
+void game_destroy(struct Game *game)
 {
     int i, stat;
 
@@ -190,20 +292,20 @@ void game_destroy(struct Game* game)
     free(game);
 }
 
-void game_add_to_next_room_choices(struct Game* game, const char* room, int index)
+void game_add_to_next_room_choices(struct Game *game, const char *room, int index)
 {
     memset(game->next_room_choices[index], 0, 11);
     memcpy(game->next_room_choices[index], room, 11);
     game->next_room_choices[index] = strtok(game->next_room_choices[index], "\n");
 }
 
-void game_set_current_room(struct Game* game, char* next_room)
+void game_set_current_room(struct Game* game, char *next_room)
 {
     memset(game->current_room, 0, 11);
     memcpy(game->current_room, next_room, 11);
 }
 
-void game_add_to_path(struct Game* game, const char* room_name)
+void game_add_to_path(struct Game *game, const char *room_name)
 {
     int stat;
     stat = fputs(room_name, game->path_file);
@@ -212,7 +314,7 @@ void game_add_to_path(struct Game* game, const char* room_name)
     assert(stat >= 0);
 }
 
-void game_print_path(struct Game* game)
+void game_print_path(struct Game *game)
 {
     char str[30];
     rewind(game->path_file);
@@ -221,11 +323,11 @@ void game_print_path(struct Game* game)
     }
 }
 
-int check_guess(char* next_room, struct Game* game)
+int check_guess(char *next_room, struct Game *game)
 {
     int i;
     for (i = 0; i < MAX_CONNECTIONS; i++) {
-        char* choice = game->next_room_choices[i];
+        char *choice = game->next_room_choices[i];
         if (starts_with(next_room, choice) == 0 && strcmp(choice, "") != 0) {
             return 0;
         }
@@ -234,7 +336,7 @@ int check_guess(char* next_room, struct Game* game)
 }
 
 // http://stackoverflow.com/questions/4770985/how-to-check-if-a-string-starts-with-another-string-in-c
-int starts_with(const char* str, const char* pre)
+int starts_with(const char *str, const char *pre)
 {
     int lenstr = strlen(str);
     int lenpre = strlen(pre);
@@ -261,7 +363,7 @@ void shuffle(int *array, size_t n)
 // http://stackoverflow.com/questions/1608181/unique-random-numbers-in-an-integer-array-in-the-c-programming-language
 // http://www.tutorialspoint.com/cprogramming/c_return_arrays_from_function.htm
 // http://stackoverflow.com/questions/8314370/rand-with-seed-does-not-return-random-if-function-looped
-int* choose_random_indices()
+int *choose_random_indices()
 {
     int in, im;
     static int indices[GAME_ROOMS];
@@ -280,7 +382,7 @@ int* choose_random_indices()
     return indices;
 }
 
-void make_temp_dir(char* dir_name)
+void make_temp_dir(char *dir_name)
 {
     int stat;
     // http://pubs.opengroup.org/onlinepubs/009695399/functions/mkdir.html
@@ -288,7 +390,7 @@ void make_temp_dir(char* dir_name)
     assert(stat == 0);
 }
 
-void connect_rooms(struct Room** rooms)
+void connect_rooms(struct Room **rooms)
 {
     // randomly create connections
     // choose a random number n between 3 and 6
@@ -315,12 +417,12 @@ void create_room_files(struct Room **rooms)
     }
 }
 
-const char* set_up()
+const char *set_up()
 {
     int i;
-    int* random_indices;
-    char* room_type;
-    const char* start_room;
+    int *random_indices;
+    char *room_type;
+    const char *start_room;
     struct Room *rooms[GAME_ROOMS];
 
     // randomly pick 7 room names
@@ -352,14 +454,14 @@ const char* set_up()
     return start_room;
 }
 
-void next_room(struct Game* game)
+void next_room(struct Game *game)
 {
     int i, j, keep_guessing;
-    FILE* fp;
+    FILE *fp;
     char buffer[256];
     char str[30];
-    char* next;
-    const char* ptr;
+    char *next;
+    const char *ptr;
 
     i = 0;
     keep_guessing = 1;
@@ -417,9 +519,9 @@ int main(int argc, char *argv[])
     int pid;
     int seed;
     int stat;
-    char* dir_name;
-    const char* start;
-    struct Game* game;
+    char *dir_name;
+    const char *start;
+    struct Game *game;
 
     /** GOOD **/
     pid = getpid();
