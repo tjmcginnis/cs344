@@ -5,7 +5,7 @@
  *
  * file: mcginnit.adventure.c
  * description:
- *  a small adventure guessing game
+ *  a Star Wars themed adventure game
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +19,7 @@
 #define MAX_CONNECTIONS 6
 #define ROOM_CHOICES 10
 #define GAME_ROOMS 7
-#define MAX_NAME_LENGTH 10
+#define NAME_LENGTH 11
 
 
 /* Potential room names for game rooms */
@@ -42,6 +42,7 @@ struct Room {
     struct Room *room_connections[MAX_CONNECTIONS];
     const char  *room_type;
 };
+
 
 /* A game instance */
 struct Game {
@@ -243,10 +244,10 @@ struct Game *game_create(const char *start_room)
     new_game->num_steps = 0;
     new_game->finished = 0;
 
-    new_game->current_room = malloc(sizeof(char) * 11);
+    new_game->current_room = malloc(sizeof(char) * NAME_LENGTH);
     assert(new_game->current_room != NULL);
     /* current room is the starting room */
-    memcpy(new_game->current_room, start_room, 11);
+    memcpy(new_game->current_room, start_room, NAME_LENGTH);
 
     /* create file to store path traversed */
     new_game->path_file_name = "victory_path";
@@ -254,10 +255,10 @@ struct Game *game_create(const char *start_room)
 
     /* allocate space for MAX_CONNECTIONS room choices */
     for (i = 0; i < MAX_CONNECTIONS; i++) {
-        new_game->next_room_choices[i] = malloc(sizeof(char) * 11);
+        new_game->next_room_choices[i] = malloc(sizeof(char) * NAME_LENGTH);
         assert(new_game->next_room_choices[i] != NULL);
         /* initialize allocated memory to \0 */
-        memset(new_game->next_room_choices[i], 0, 11);
+        memset(new_game->next_room_choices[i], 0, NAME_LENGTH);
     }
 
     return new_game;
@@ -274,7 +275,7 @@ void game_clear_room_choices(struct Game *game)
 {
     int i;
     for (i = 0; i < MAX_CONNECTIONS; i++) {
-        memset(game->next_room_choices[i], 0, 11);
+        memset(game->next_room_choices[i], 0, NAME_LENGTH);
     }
 }
 
@@ -322,9 +323,9 @@ void game_destroy(struct Game *game)
 void game_add_to_next_room_choices(struct Game *game, const char *room, int index)
 {
     /* first clear the memory that will be used */
-    memset(game->next_room_choices[index], 0, 11);
+    memset(game->next_room_choices[index], 0, NAME_LENGTH);
     /* copy room name into next_room_choices */
-    memcpy(game->next_room_choices[index], room, 11);
+    memcpy(game->next_room_choices[index], room, NAME_LENGTH);
     /*
      * remove newline characters
      * (in cases where room comes from standard input)
@@ -345,8 +346,8 @@ void game_add_to_next_room_choices(struct Game *game, const char *room, int inde
 void game_set_current_room(struct Game* game, char *next_room)
 {
     /* first clear the memory to be used */
-    memset(game->current_room, 0, 11);
-    memcpy(game->current_room, next_room, 11);
+    memset(game->current_room, 0, NAME_LENGTH);
+    memcpy(game->current_room, next_room, NAME_LENGTH);
 }
 
 
@@ -388,16 +389,16 @@ void game_print_path(struct Game *game)
 
 
 /*
- * Check if user guess is a valid room choice
+ * Check if user choice is a valid room choice
  *
  * @param next_room
- *  the user's guess
+ *  the user's choice
  * @param game
  *  the game instance
  *
- * Return 0 if valid guess, 1 otherwise
+ * Return 0 if valid choice, 1 otherwise
  */
-int check_guess(char *next_room, struct Game *game)
+int check_choice(char *next_room, struct Game *game)
 {
     int i;
     char *choice;
@@ -405,7 +406,7 @@ int check_guess(char *next_room, struct Game *game)
     for (i = 0; i < MAX_CONNECTIONS; i++) {
         choice = game->next_room_choices[i];
         /*
-         * Compare guess with connecting room name
+         * Compare choice with connecting room name
          * Ensure connecting room is not an empty string
          * */
         if (starts_with(next_room, choice) == 0 && strcmp(choice, "") != 0) {
@@ -557,6 +558,13 @@ void create_room_files(struct Room **rooms)
     }
 }
 
+
+/*
+ * Set up the files needed for gameplay
+ *
+ * Returns the name of the room designated as
+ * the starting room
+ */
 const char *set_up()
 {
     int i;
@@ -565,9 +573,10 @@ const char *set_up()
     const char *start_room;
     struct Room *rooms[GAME_ROOMS];
 
-    // randomly pick 7 room names
+    /* randomly pick integers, which will be used to pick room names */
     random_indices = choose_random_indices(ROOM_CHOICES, GAME_ROOMS);
 
+    /* create rooms */
     for (i = 0; i < GAME_ROOMS; i++) {
         switch (i) {
             case 0:
@@ -583,10 +592,13 @@ const char *set_up()
         rooms[i] = room_create(ROOM_NAMES[random_indices[i] - 1], room_type);
     }
 
+    /* make random connections between rooms */
     connect_rooms(rooms);
+
+    /* write room data to files */
     create_room_files(rooms);
 
-    // destroy room structs
+    /* destroy struct Rooms */
     for (i = 0; i < (sizeof(rooms) / sizeof(struct Room*)); i++) {
         room_destroy(rooms[i]);
     }
@@ -594,42 +606,57 @@ const char *set_up()
     return start_room;
 }
 
+
+/*
+ * Read in the current rooms data and prompt user
+ * Set the current room to the next room
+ *
+ * @param game
+ *  game instance to use
+ *
+ *  use of strchar based on:
+ *  http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
+ */
 void next_room(struct Game *game)
 {
-    int i, j, keep_guessing;
+    int i, j, keep_choosing;
     FILE *fp;
-    char buffer[256];
-    char str[30];
+    char line[30], buffer[256];
     char *next;
     const char *ptr;
 
     i = 0;
-    keep_guessing = 1;
-    fp = fopen(game->current_room, "r");  // check fp
+    keep_choosing = 1;
+    /* open room file */
+    fp = fopen(game->current_room, "r");
     assert(fp != NULL);
 
-    while (fgets(str, sizeof str, fp) != NULL) {
-        // http://stackoverflow.com/questions/1479386/is-there-a-function-in-c-that-will-return-the-index-of-a-char-in-a-char-array
-        ptr = strchr(str, ':');
+    /* read room file line-by-line */
+    while (fgets(line, sizeof line, fp) != NULL) {
+        /* get a pointer to the line's data */
+        ptr = strchr(line, ':');
         ptr += 2;
-        if (starts_with(str, "CONNECTION") == 0 && ptr) {
+        if (starts_with(line, "CONNECTION") == 0 && ptr) {
             game_add_to_next_room_choices(game, ptr, i);
-            i += 1;
+            i += 1;  // i keeps track of the next choice index
         }
-        if (starts_with(str, "ROOM TYPE") == 0 && ptr) {
+        if (starts_with(line, "ROOM TYPE") == 0 && ptr) {
             if (starts_with(ptr, "END_ROOM") == 0) {
+                /* game over */
                 game->finished = 1;
-                keep_guessing = 0;
+                keep_choosing = 0;
             }
         }
     }
 
-    while(keep_guessing == 1) {
+    /* keep user choosing until a valid choice is entered */
+    while(keep_choosing == 1) {
         fseek(stdin, 0, SEEK_END);
         printf("CURRENT LOCATION: %s\n", game->current_room);
         printf("POSSIBLE CONNECTIONS: ");
         for (j = 0; j < i; j++) {
             printf("%s", game->next_room_choices[j]);
+            /* Proper grammar and formatting */
             if (j < i - 1) {
                 printf(", ");
             } else {
@@ -638,11 +665,13 @@ void next_room(struct Game *game)
         }
 
         printf("WHERE TO? >");
-        fgets(buffer, sizeof(buffer), stdin);
-        if (check_guess(buffer, game) == 0) {
+        fgets(buffer, sizeof(buffer), stdin);  // get user's choice
+
+        if (check_choice(buffer, game) == 0) {
+            /* valid choice is the new current room */
             game_set_current_room(game, strtok(buffer, "\n"));
             game_add_to_path(game, game->current_room);
-            keep_guessing = 0;
+            keep_choosing = 0;
             game->num_steps += 1;
         } else {
             printf("\nHUH? I DON’T UNDERSTAND THAT ROOM. TRY AGAIN.\n");
@@ -650,7 +679,7 @@ void next_room(struct Game *game)
         printf("\n");
     }
 
-    game_clear_room_choices(game);
+    game_clear_room_choices(game);  // reset room choices
     fclose(fp);
 }
 
@@ -663,19 +692,23 @@ int main(int argc, char *argv[])
     const char *start;
     struct Game *game;
 
-    /** GOOD **/
+    /* Create instance directory */
     pid = getpid();
     dir_name = malloc(sizeof(char) * 30);
     sprintf(dir_name, "mcginnit.rooms.%i", pid);
     make_temp_dir(dir_name);
 
+    /* Change to instance directory */
     stat = chdir(dir_name);
     assert(stat == 0);
 
     free(dir_name);
 
+    /* Seed rand */
     seed = time(NULL);
     srand(seed);
+
+    /* Get first room and create game */
     start = set_up();
     game = game_create(start);
 
@@ -689,5 +722,5 @@ int main(int argc, char *argv[])
 
     game_destroy(game);
 
-    return 0;
+    exit(0);
 }
