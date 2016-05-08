@@ -1,17 +1,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+
+#include "builtins.h"
 
 #define COMMAND_LENGTH 2048
 #define MAX_ARGUMENTS 512
 
 static int STATUS;
 
-
-void change_directory()
-{
-
-}
 
 int main(int argc, char *argv[])
 {
@@ -20,7 +18,6 @@ int main(int argc, char *argv[])
     char command[COMMAND_LENGTH];
 
     char* action;
-    char* arg;
 
     do {
         printf(": ");
@@ -32,7 +29,6 @@ int main(int argc, char *argv[])
         token = strtok(NULL, " ");
 
         if (strncmp(action, "cd", strlen("cd")) == 0) {
-            printf("cd command issued\n");
             char* path = getenv("HOME");
             if (token != NULL) {
                 path = token;
