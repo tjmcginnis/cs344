@@ -57,16 +57,35 @@ void test_change_directory()
     assert(strncmp(cwd, absolute, strlen(dot)) == 0);
 }
 
+void test_get_status()
+{
+    assert(get_status() == 0);
+}
+
+void test_set_status()
+{
+    set_status(1);
+    assert(get_status() == 1);
+}
+
 int main(int argc, char *argv[])
 {
     int i = 0;
 
     test_change_directory();
-    printf(" . ");
+    printf(".");
+    i += 1;
+
+    test_get_status();
+    printf(".");
+    i += 1;
+
+    test_set_status();
+    printf(".");
     i += 1;
 
     printf("\n---------------------------\n");
-    printf("%d tests passted\n", i);
+    printf("%d tests passed\n", i);
 
     exit(0);
 }

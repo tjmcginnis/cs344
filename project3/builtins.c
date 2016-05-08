@@ -3,7 +3,9 @@
 #include <unistd.h>
 
 
-void change_directory(const char* path)
+static int STATUS = 0;
+
+void change_directory(char* path)
 {
     char* dir;
 
@@ -13,4 +15,14 @@ void change_directory(const char* path)
     }
 
     chdir(dir);
+}
+
+int get_status()
+{
+    return STATUS;
+}
+
+void set_status(int new_status)
+{
+    STATUS = new_status;
 }

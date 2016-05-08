@@ -8,8 +8,6 @@
 #define COMMAND_LENGTH 2048
 #define MAX_ARGUMENTS 512
 
-static int STATUS;
-
 
 int main(int argc, char *argv[])
 {
@@ -29,20 +27,12 @@ int main(int argc, char *argv[])
         token = strtok(NULL, " ");
 
         if (strncmp(action, "cd", strlen("cd")) == 0) {
-            char* path = getenv("HOME");
-            if (token != NULL) {
-                path = token;
-            }
-            chdir(path);
-
-            char cwd[1024];
-            getcwd(cwd, sizeof(cwd));
-            printf("Current dir: %s\n", cwd);
-
+            change_directory(token);
         } else if (strncmp(action, "status", strlen("status")) == 0) {
-            printf("status command issued\n");
+            printf("%d\n", get_status());
         } else if (strncmp(action, "exit", strlen("exit")) == 0) {
             printf("exit command issued\n");
+        } else if (strncmp(action, "#", strlen("#")) == 0) {
         } else {
             printf("Non built-in command issued\n");
         }

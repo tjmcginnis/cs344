@@ -1,16 +1,15 @@
 CC = gcc
 CFLAGS=-Wall -g
 
-default: shell tests
 
-all:
-	chmod +x ./shell
+all: shell tests
+	chmod +x ./smallsh
 	chmod +x ./tests
 
-shell: 		builtins.o mcginnit.shell.c
-	$(CC) $(CFLAGS) -o shell builtins.o mcginnit.shell.c
+shell: 	builtins.o mcginnit.shell.c
+	$(CC) $(CFLAGS) -o smallsh builtins.o mcginnit.shell.c
 
-tests:		tests.c builtins.o
+tests:	tests.c builtins.o
 	$(CC) $(CFLAGS) -o tests builtins.o tests.c
 
 builtins:	builtins.c builtins.h
@@ -18,5 +17,4 @@ builtins:	builtins.c builtins.h
 
 
 clean:
-	# rm -f shell
-	$(RM) shell tests *.o
+	$(RM) smallsh tests *.o
