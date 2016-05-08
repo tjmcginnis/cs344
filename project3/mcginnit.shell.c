@@ -7,34 +7,52 @@
 
 static int STATUS;
 
+
+void change_directory()
+{
+
+}
+
 int main(int argc, char *argv[])
 {
     char* token;
     size_t exit_length = strlen("exit");
     char command[COMMAND_LENGTH];
 
+    char* action;
+    char* arg;
+
     do {
         printf(": ");
         fgets(command, COMMAND_LENGTH, stdin);
-        token = strtok(command, " ");
-        while (token != NULL ) {
-            printf( "%s\n", token );
-            token = strtok(NULL, " ");
+
+        token = strtok(command, "\n");
+        token = strtok(token, " ");
+        action = token;
+        token = strtok(NULL, " ");
+
+        if (strncmp(action, "cd", strlen("cd")) == 0) {
+            printf("cd command issued\n");
+            char* path = getenv("HOME");
+            if (token != NULL) {
+                path = token;
+            }
+            chdir(path);
+
+            char cwd[1024];
+            getcwd(cwd, sizeof(cwd));
+            printf("Current dir: %s\n", cwd);
+
+        } else if (strncmp(action, "status", strlen("status")) == 0) {
+            printf("status command issued\n");
+        } else if (strncmp(action, "exit", strlen("exit")) == 0) {
+            printf("exit command issued\n");
+        } else {
+            printf("Non built-in command issued\n");
         }
+
         fflush(stdin);
     } while (strncmp(command, "exit", exit_length) != 0);
-
-    char cwd[1024];
-    chdir("..");
-    getcwd(cwd, sizeof(cwd));
-    printf("Current dir: %s\n", cwd);
-
-    const char *home;
-    home = getenv("HOME");
-    chdir(home);
-    getcwd(cwd, sizeof(cwd));
-    printf("Current dir: %s\n", cwd);
-
 
     /* kill any other processes or jobs */
 
