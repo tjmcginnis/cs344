@@ -7,20 +7,55 @@
 
 #define COMMAND_LENGTH 2048
 #define MAX_ARGUMENTS 512
+#define MAX_FORKS 100
 
+
+struct Shell {
+    pid_t* background_processes[MAX_FORKS];
+    char* cwd;  // current working directory
+    size_t status;
+    size_t last_exit;  // 0 for 'exit status', 1 for 'terminating signal'
+};
+
+struct Command {
+    char* command;
+    char* args[MAX_ARGUMENTS];
+    size_t redirect;  // 0 for none, -1 for input, 1 for output
+    char* input_file;
+    char* output_file;
+    size_t background;  // 0 for foreground process, 1 for background process
+};
+
+void get_input(char* buffer, size_t length)
+{
+    printf(": ");
+    fgets(buffer, length, stdin);
+
+    // replace trailing newline null terminator
+    buffer[strlen(buffer) - 1] = 0;
+
+    // flush stdin for the next command
+    fflush(stdin);
+}
+
+/*
+void parse_args(struct Command* cmd, char* input){}
+void command_execute(struct Command* cmd){}
+
+struct Command* command_create(char* input){}
+void command_destroy(struct Command* command){}
+*/
 
 int main(int argc, char *argv[])
 {
-    char* token;
-    size_t exit_length = strlen("exit");
+    // char* token;
     char command[COMMAND_LENGTH];
 
-    char* action;
+    // char* action;
 
     do {
-        printf(": ");
-        fgets(command, COMMAND_LENGTH, stdin);
-
+        get_input(command, COMMAND_LENGTH);
+        /*
         token = strtok(command, "\n");
         token = strtok(token, " ");
         action = token;
@@ -35,10 +70,9 @@ int main(int argc, char *argv[])
         } else if (strncmp(action, "#", strlen("#")) == 0) {
         } else {
             printf("Non built-in command issued\n");
-        }
+        }*/
 
-        fflush(stdin);
-    } while (strncmp(command, "exit", exit_length) != 0);
+    } while (strncmp(command, "exit", strlen("exit")) != 0);
 
     /* kill any other processes or jobs */
 
