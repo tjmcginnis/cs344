@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "builtins.h"
 
@@ -38,23 +39,53 @@ void get_input(char* buffer, size_t length)
     fflush(stdin);
 }
 
-/*
-void parse_args(struct Command* cmd, char* input){}
-void command_execute(struct Command* cmd){}
+struct Command* command_create(char* input){
+    char* token;
+    struct Command* command = malloc(sizeof(struct Command));
+    assert(command != NULL);
 
-struct Command* command_create(char* input){}
-void command_destroy(struct Command* command){}
+    token = strtok(input, " ");
+
+    /* get action */
+    command->command = malloc(sizeof(char) * strlen(token));
+    memcpy(command->command, token, strlen(token));
+
+    token = strtok(NULL, " ");
+    /* parse args */
+
+    /* i/o redirection */
+
+    return command;
+}
+
+void command_destroy(struct Command* command)
+{
+    assert(command != NULL);
+    assert(command->command != NULL);
+
+    free(command->command);
+    free(command);
+}
+
+void parse_args(struct Command* cmd, char* token)
+{
+    
+}
+/*
+void command_execute(struct Command* cmd){}
 */
 
 int main(int argc, char *argv[])
 {
     // char* token;
     char command[COMMAND_LENGTH];
+    struct Command* current_command;
 
     // char* action;
 
     do {
         get_input(command, COMMAND_LENGTH);
+        current_command = command_create(command);
         /*
         token = strtok(command, "\n");
         token = strtok(token, " ");
@@ -71,6 +102,7 @@ int main(int argc, char *argv[])
         } else {
             printf("Non built-in command issued\n");
         }*/
+        command_destroy(current_command);
 
     } while (strncmp(command, "exit", strlen("exit")) != 0);
 
