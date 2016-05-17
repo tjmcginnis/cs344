@@ -70,7 +70,32 @@ void parse_args(struct Command* command, char** token)
     regfree(&regex);
 }
 
-struct Command* command_create(char* input){
+void set_io_redirect(struct Command* command, char** token)
+{
+    if (*token && strncmp(*token, "<", sizeof(*token)) == 0) {
+        command->redirect = -1;
+        *token = strtok(NULL, " ");
+        command->input_file = malloc(sizeof(char) * sizeof(*token));
+        memcpy(command->input_file, *token, sizeof(*token));
+        *token = strtok(NULL, " ");
+    } else if (*token && strncmp(*token, ">", sizeof(*token)) == 0) {
+        command->redirect = 1;
+        *token = strtok(NULL, " ");
+        command->output_file = malloc(sizeof(char) * sizeof(*token));
+        memcpy(command->output_file, *token, sizeof(*token));
+        *token = strtok(NULL, " ");
+    }
+}
+
+void set_background_flag(struct Command* command, char** token)
+{
+    if (*token && strncmp(*token, "&", sizeof(*token)) == 0) {
+        command->background = 1;
+    }
+}
+
+struct Command* command_create(char* input)
+{
     size_t i;
     char* token;
     struct Command* command = malloc(sizeof(struct Command));
@@ -81,11 +106,12 @@ struct Command* command_create(char* input){
     /* get action */
     command->command = malloc(sizeof(char) * sizeof(token));
     memcpy(command->command, token, sizeof(token));
+    token = strtok(NULL, " ");
 
     command->input_file = 0;
     command->output_file = 0;
-
-    token = strtok(NULL, " ");
+    command->redirect = 0;
+    command->background = 0;
 
     /* parse args */
     for (i = 0; i < MAX_ARGUMENTS; i++) {
@@ -93,27 +119,8 @@ struct Command* command_create(char* input){
     }
 
     parse_args(command, &token);
-
-    /* i/o redirection */
-    command->redirect = 0;
-    if (token && strncmp(token, "<", sizeof(token)) == 0) {
-        command->redirect = -1;
-        token = strtok(NULL, " ");
-        command->input_file = malloc(sizeof(char) * sizeof(token));
-        memcpy(command->input_file, token, sizeof(token));
-    } else if (token && strncmp(token, ">", sizeof(token)) == 0) {
-        command->redirect = 1;
-        token = strtok(NULL, " ");
-        command->output_file = malloc(sizeof(char) * sizeof(token));
-        memcpy(command->output_file, token, sizeof(token));
-    }
-
-    /* background process */
-    command->background = 0;
-    if (token && strncmp(token, "&", sizeof(token)) == 0) {
-        printf("run process in background\n");
-        command->background = 1;
-    }
+    set_io_redirect(command, &token);
+    set_background_flag(command, &token);
 
     return command;
 }
@@ -145,12 +152,9 @@ void command_execute(struct Command* cmd){}
 
 int main(int argc, char *argv[])
 {
-    // char* token;
     size_t exit_flag;
     char command[COMMAND_LENGTH];
     struct Command* current_command;
-
-    // char* action;
 
     exit_flag = 0;
 
@@ -162,6 +166,8 @@ int main(int argc, char *argv[])
 
         if (strncmp(current_command->command, "exit", strlen("exit")) == 0) {
             exit_flag = 1;
+            command_destroy(current_command);
+            break;
         }
 
         /*
