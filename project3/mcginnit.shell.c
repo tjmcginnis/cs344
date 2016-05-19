@@ -5,8 +5,6 @@
 #include <assert.h>
 #include <regex.h>
 
-#include "builtins.h"
-
 #define COMMAND_LENGTH 2048
 #define MAX_ARGUMENTS 512
 #define MAX_FORKS 100
@@ -14,7 +12,6 @@
 
 struct Shell {
     pid_t* background_processes[MAX_FORKS];
-    char* cwd;  // current working directory
     size_t status;
     size_t last_exit;  // 0 for 'exit status', 1 for 'terminating signal'
 };
@@ -59,8 +56,10 @@ void parse_args(struct Command* command, char** token)
     stat = regexec(&regex, *token, 0, NULL, 0);
     while (stat && i < MAX_ARGUMENTS) {
         // add token to array of arguments
-        command->args[i] = malloc(sizeof(char) * sizeof(*token));
-        memcpy(command->args[i], *token, sizeof(*token));
+        // printf("token = %s | size = %lu\n", *token, strlen(*token));
+        command->args[i] = malloc(sizeof(char) * strlen(*token)+1);
+        memset(command->args[i], 0, strlen(*token)+1);
+        memcpy(command->args[i], *token, strlen(*token));
         i = i + 1;
         *token = strtok(NULL, " ");
         if (*token == NULL) break;
@@ -146,9 +145,44 @@ void command_destroy(struct Command* command)
     free(command);
 }
 
-/*
-void command_execute(struct Command* cmd){}
-*/
+void change_directory(char* path)
+{
+    char* tmp;
+    char* dir;
+
+    tmp = 0;
+    dir = getenv("HOME");
+
+    if (path != NULL) {
+        if (path[0] == '/') {
+            tmp = malloc(sizeof(char) * strlen(path));
+            memset(tmp, 0, strlen(path));
+            memcpy(tmp, path + 1, strlen(path) - 1);
+            path = tmp;
+        }
+        dir = path;
+    }
+    printf("Changing to dir: %s\n", path);
+
+    chdir(dir);
+    if (tmp) free(tmp);
+}
+
+void command_execute(struct Command* cmd)
+{
+    if (strncmp(cmd->command, "cd", strlen("cd")) == 0) {
+        char cwd[1024];
+        getcwd(cwd, sizeof(cwd));
+        printf("current dir: %s\n", cwd);
+        change_directory(cmd->args[0]);
+        getcwd(cwd, sizeof(cwd));
+        printf("current dir: %s\n", cwd);
+    } else if (strncmp(cmd->command, "status", strlen("status")) == 0) {
+
+    } else {
+        printf("You'll have to fork, exec, wait for this one\n");
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -169,6 +203,15 @@ int main(int argc, char *argv[])
             command_destroy(current_command);
             break;
         }
+
+        int i;
+        for (i = 0; i < MAX_ARGUMENTS; i++) {
+            if (current_command->args[i] != NULL) {
+                printf("arg %d: %s\n", i, current_command->args[i]);
+            }
+        }
+
+        command_execute(current_command);
 
         /*
         if (strncmp(action, "cd", strlen("cd")) == 0) {
