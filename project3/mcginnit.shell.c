@@ -9,12 +9,10 @@
 #define MAX_ARGUMENTS 512
 #define MAX_FORKS 100
 
-
-struct Shell {
-    pid_t* background_processes[MAX_FORKS];
-    size_t status;
-    size_t last_exit;  // 0 for 'exit status', 1 for 'terminating signal'
-};
+pid_t* BACKGROUND_PROCESSES[MAX_FORKS];
+size_t STATUS = 0;
+/* 0 for exit status, positive integer for terminating signal */
+size_t SIGNAL = 0;
 
 struct Command {
     char* command;
@@ -162,23 +160,34 @@ void change_directory(char* path)
         }
         dir = path;
     }
-    printf("Changing to dir: %s\n", path);
 
     chdir(dir);
     if (tmp) free(tmp);
 }
 
+void set_status(size_t new_status, size_t signal)
+{
+    STATUS = new_status;
+    SIGNAL = signal;
+}
+
+void print_status()
+{
+    char* descriptor;
+    if (SIGNAL == 0) {
+        descriptor = "exit value";
+    } else {
+        descriptor = "terminated by signal";
+    }
+    printf("%s %zd\n", descriptor, STATUS);
+}
+
 void command_execute(struct Command* cmd)
 {
     if (strncmp(cmd->command, "cd", strlen("cd")) == 0) {
-        char cwd[1024];
-        getcwd(cwd, sizeof(cwd));
-        printf("current dir: %s\n", cwd);
         change_directory(cmd->args[0]);
-        getcwd(cwd, sizeof(cwd));
-        printf("current dir: %s\n", cwd);
     } else if (strncmp(cmd->command, "status", strlen("status")) == 0) {
-
+        print_status();
     } else {
         printf("You'll have to fork, exec, wait for this one\n");
     }
@@ -204,26 +213,7 @@ int main(int argc, char *argv[])
             break;
         }
 
-        int i;
-        for (i = 0; i < MAX_ARGUMENTS; i++) {
-            if (current_command->args[i] != NULL) {
-                printf("arg %d: %s\n", i, current_command->args[i]);
-            }
-        }
-
         command_execute(current_command);
-
-        /*
-        if (strncmp(action, "cd", strlen("cd")) == 0) {
-            change_directory(token);
-        } else if (strncmp(action, "status", strlen("status")) == 0) {
-            printf("%d\n", get_status());
-        } else if (strncmp(action, "exit", strlen("exit")) == 0) {
-            printf("exit command issued\n");
-        } else if (strncmp(action, "#", strlen("#")) == 0) {
-        } else {
-            printf("Non built-in command issued\n");
-        }*/
         command_destroy(current_command);
 
     } while (exit_flag == 0);
