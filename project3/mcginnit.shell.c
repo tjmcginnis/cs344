@@ -4,11 +4,14 @@
 #include <unistd.h>
 #include <assert.h>
 #include <regex.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define COMMAND_LENGTH 2048
 #define MAX_ARGUMENTS 512
 #define MAX_FORKS 100
 
+size_t NUM_PROCESSES = 0;
 pid_t* BACKGROUND_PROCESSES[MAX_FORKS];
 size_t STATUS = 0;
 /* 0 for exit status, positive integer for terminating signal */
@@ -16,7 +19,7 @@ size_t SIGNAL = 0;
 
 struct Command {
     char* command;
-    char* args[MAX_ARGUMENTS];
+    char* args[MAX_ARGUMENTS + 1];
     size_t redirect;  // 0 for none, -1 for input, 1 for output
     char* input_file;
     char* output_file;
@@ -40,7 +43,7 @@ void parse_args(struct Command* command, char** token)
     size_t i, stat;
     regex_t regex;
 
-    i = 0;
+    i = 1;
 
     stat = regcomp(&regex, "[<|>|&]", REG_NOSUB);
     assert(stat == 0);
@@ -103,6 +106,9 @@ struct Command* command_create(char* input)
     /* get action */
     command->command = malloc(sizeof(char) * sizeof(token));
     memcpy(command->command, token, sizeof(token));
+
+    command->args[0] = command->command;
+
     token = strtok(NULL, " ");
 
     command->input_file = 0;
@@ -111,7 +117,7 @@ struct Command* command_create(char* input)
     command->background = 0;
 
     /* parse args */
-    for (i = 0; i < MAX_ARGUMENTS; i++) {
+    for (i = 1; i < MAX_ARGUMENTS; i++) {
         command->args[i] = 0;
     }
 
@@ -139,7 +145,7 @@ void command_destroy(struct Command* command)
         free(command->output_file);
     }
 
-    free(command->command);
+    // free(command->command);
     free(command);
 }
 
@@ -185,11 +191,48 @@ void print_status()
 void command_execute(struct Command* cmd)
 {
     if (strncmp(cmd->command, "cd", strlen("cd")) == 0) {
-        change_directory(cmd->args[0]);
+        change_directory(cmd->args[1]);
     } else if (strncmp(cmd->command, "status", strlen("status")) == 0) {
         print_status();
     } else {
-        printf("You'll have to fork, exec, wait for this one\n");
+        //pid_t parent = getpid();
+        pid_t pid = fork();
+
+        if (pid == -1) {
+            // error
+        } else if (pid > 0) {
+            //int status;
+            //waitpid(pid, &status, 0);
+            //printf("%d\n", status);
+        } else {
+            // child process
+            // handle i/o redirect
+            if (cmd->redirect == -1) {
+                // input
+                FILE* fd = fopen(cmd->input_file, "r");
+                dup2(fileno(fd), STDIN_FILENO);
+                fclose(fd);
+            } else if (cmd->redirect == 1) {
+                // output
+                FILE* fd1 = fopen(cmd->output_file, "a");
+                dup2(fileno(fd1), STDOUT_FILENO);
+                fclose(fd1);
+            }
+
+            // handle background processes
+
+            execvp(cmd->command, cmd->args);
+
+            // exit status ?
+            _exit(EXIT_FAILURE);
+        }
+        if (cmd->background == 0) {
+            int stat;
+            waitpid(pid, &stat, 0);
+        } else {
+            BACKGROUND_PROCESSES[NUM_PROCESSES] = pid;
+            NUM_PROCESSES = NUM_PROCESSES + 1;
+        }
     }
 }
 
@@ -219,6 +262,10 @@ int main(int argc, char *argv[])
     } while (exit_flag == 0);
 
     /* kill any other processes or jobs */
+    int counter;
+    for (counter = 0; counter < NUM_PROCESSES; counter++) {
+        printf("%zd\t", BACKGROUND_PROCESSES[NUM_PROCESSES]);
+    }
 
     exit(0);
 }
