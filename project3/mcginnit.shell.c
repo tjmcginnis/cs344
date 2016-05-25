@@ -12,22 +12,23 @@
 #define MAX_ARGUMENTS 512
 #define MAX_FORKS 100
 
-size_t NUM_PROCESSES = 0;
+int NUM_PROCESSES = 0;
 pid_t BACKGROUND_PROCESSES[MAX_FORKS];
-size_t STATUS = 0;
+int STATUS = 0;
 /* 0 for exit status, positive integer for terminating signal */
 char STATUS_MESSAGE[64] = "exit value 0";
 
 char* MESSAGE_QUEUE[MAX_FORKS];
 int NUM_MESSAGES = 0;
+int error_flag = 0;
 
 struct Command {
     char* command;
     char* args[MAX_ARGUMENTS + 1];
-    size_t redirect;  // 0 for none, -1 for input, 1 for output
+    int redirect;  // 0 for none, -1 for input, 1 for output
     char* input_file;
     char* output_file;
-    size_t background;  // 0 for foreground process, 1 for background process
+    int background;  // 0 for foreground process, 1 for background process
 };
 
 
@@ -37,7 +38,7 @@ void print_and_flush(char* buffer)
     fflush(stdout);
 }
 
-void get_input(char* buffer, size_t length)
+void get_input(char* buffer, int length)
 {
     print_and_flush(": ");
     fgets(buffer, length, stdin);
@@ -51,7 +52,7 @@ void get_input(char* buffer, size_t length)
 
 void parse_args(struct Command* command, char** token)
 {
-    size_t i, stat;
+    int i, stat;
     regex_t regex;
 
     i = 1;
@@ -107,7 +108,7 @@ void set_background_flag(struct Command* command, char** token)
 
 struct Command* command_create(char* input)
 {
-    size_t i;
+    int i;
     char* token;
     struct Command* command = malloc(sizeof(struct Command));
     assert(command != NULL);
@@ -141,7 +142,7 @@ struct Command* command_create(char* input)
 
 void command_destroy(struct Command* command)
 {
-    size_t i;
+    int i;
     assert(command != NULL);
     assert(command->command != NULL);
 
@@ -220,7 +221,7 @@ void background_exit(int signum)
     }
 }
 
-void redirect_input(struct Command* cmd, size_t* error_flag)
+void redirect_input(struct Command* cmd)
 {
     /* open file */
     FILE* fd = fopen(cmd->input_file, "r");
@@ -232,14 +233,14 @@ void redirect_input(struct Command* cmd, size_t* error_flag)
         print_and_flush(msg);
         set_status("exit value 1");  // set shell exit status
         /* set error_flag so command does not exec */
-        *error_flag = 1;
+        error_flag = 1;
         return;
     }
     dup2(fileno(fd), STDIN_FILENO);
     fclose(fd);
 }
 
-void redirect_output(struct Command* cmd, size_t* error_flag)
+void redirect_output(struct Command* cmd)
 {
     FILE* fd = fopen(cmd->output_file, "w");
     if (fd == NULL) {
@@ -249,7 +250,7 @@ void redirect_output(struct Command* cmd, size_t* error_flag)
         print_and_flush(msg);
         set_status("exit value 1");  // set shell exit status
         /* set error_flag so command does not exec */
-        *error_flag = 1;
+        error_flag = 1;
         return;
     }
     dup2(fileno(fd), STDOUT_FILENO);
@@ -259,27 +260,55 @@ void redirect_output(struct Command* cmd, size_t* error_flag)
 void wait_foreground_command(pid_t pid)
 {
     int status;
-    size_t exit_value;
+    int exit_value;
     char status_message[64];
 
+    /* wait for execution to complete and get exit value */
     waitpid(pid, &status, 0);
     exit_value = WEXITSTATUS(status);
 
     /* set status */
-    sprintf(status_message, "exit value %zd", exit_value);
+    sprintf(status_message, "exit value %d", exit_value);
     set_status(status_message);
+}
 
+void sigint_handler(int sig)
+{
+    print_and_flush("terminated by signal 2\n");
+    set_status("terminated by signal 2");
+    error_flag = 1;
 }
 
 void command_execute(struct Command* cmd)
 {
+    error_flag = 0;
+
     if (strncmp(cmd->command, "cd", strlen("cd")) == 0) {
         change_directory(cmd->args[1]);
     } else if (strncmp(cmd->command, "status", strlen("status")) == 0) {
         print_status();
     } else {
-        //pid_t parent = getpid();
-        pid_t pid = fork();
+        pid_t pid;
+
+        /* set up signal handling for foreground processes */
+        if (cmd->background == 0) {
+            struct sigaction sa;
+            sa.sa_handler = sigint_handler;
+            sa.sa_flags = 0;
+            sigemptyset(&sa.sa_mask);
+
+            if (sigaction(SIGINT, &sa, NULL) == -1) {
+                perror("sigaction");
+                exit(1);
+            }
+        }
+
+        if (NUM_PROCESSES < 100) {
+            pid = fork();
+            NUM_PROCESSES = NUM_PROCESSES + 1;
+        } else {
+            exit(1);
+        }
 
         if (pid == -1) {
             // error
@@ -290,20 +319,14 @@ void command_execute(struct Command* cmd)
             // printf("%zd", cmd->background);
         } else {
             // child process
-            size_t error_flag = 0;
+
             if (cmd->redirect == -1) {
-                redirect_input(cmd, &error_flag);
+                redirect_input(cmd);
             } else if (cmd->redirect == 1) {
-                redirect_output(cmd, &error_flag);
+                redirect_output(cmd);
             }
 
-            // handle background processes
-            if (cmd->background == 1) {
-                //printf("%ld", (long)pid);
-                BACKGROUND_PROCESSES[NUM_PROCESSES] = pid;
-                NUM_PROCESSES = NUM_PROCESSES + 1;
-            }
-
+            printf("ERROR FLAG: %d\n", error_flag);
             if (error_flag == 0) {
                 if (execvp(cmd->command, cmd->args) == -1) {
                     char msg[64];
@@ -324,7 +347,7 @@ void command_execute(struct Command* cmd)
             STATUS = WEXITSTATUS(stat);
 
             /* set status */
-            sprintf(status, "exit value %zd", STATUS);
+            sprintf(status, "exit value %d", STATUS);
             set_status(status);
         } else {
             printf("background pid is %ld\n", (long)pid);
@@ -332,9 +355,10 @@ void command_execute(struct Command* cmd)
     }
 }
 
+
 int main(int argc, char *argv[])
 {
-    size_t exit_flag;
+    int exit_flag;
     char command[COMMAND_LENGTH];
     struct Command* current_command;
 
@@ -345,8 +369,28 @@ int main(int argc, char *argv[])
     act.sa_flags = SA_NODEFER;
     sigaction(SIGCHLD, &act, NULL);
 
+    struct sigaction sa;
+    sa.sa_handler = sigint_handler;
+    sa.sa_flags = 0;
+    sigemptyset(&sa.sa_mask);
+
     do {
+
+        sa.sa_handler = SIG_IGN;
+        if (sigaction(SIGINT, &sa, NULL) == -1) {
+            perror("sigaction");
+            exit(1);
+        }
+
         get_input(command, COMMAND_LENGTH);
+
+
+        sa.sa_handler = sigint_handler;
+        if (sigaction(SIGINT, &sa, NULL) == -1) {
+            perror("sigaction");
+            exit(1);
+        }
+
         if (command[0] == '\0' || command[0] == '#') continue;
 
         current_command = command_create(command);
