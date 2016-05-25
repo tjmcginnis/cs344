@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <regex.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -12,10 +13,13 @@
 #define MAX_FORKS 100
 
 size_t NUM_PROCESSES = 0;
-pid_t* BACKGROUND_PROCESSES[MAX_FORKS];
+pid_t BACKGROUND_PROCESSES[MAX_FORKS];
 size_t STATUS = 0;
 /* 0 for exit status, positive integer for terminating signal */
-size_t SIGNAL = 0;
+char STATUS_MESSAGE[64] = "exit value 0";
+
+char* MESSAGE_QUEUE[MAX_FORKS];
+int NUM_MESSAGES = 0;
 
 struct Command {
     char* command;
@@ -26,9 +30,16 @@ struct Command {
     size_t background;  // 0 for foreground process, 1 for background process
 };
 
+
+void print_and_flush(char* buffer)
+{
+    write(STDOUT_FILENO, buffer, strlen(buffer));
+    fflush(stdout);
+}
+
 void get_input(char* buffer, size_t length)
 {
-    printf(": ");
+    print_and_flush(": ");
     fgets(buffer, length, stdin);
 
     // replace trailing newline null terminator
@@ -145,7 +156,6 @@ void command_destroy(struct Command* command)
         free(command->output_file);
     }
 
-    // free(command->command);
     free(command);
 }
 
@@ -171,21 +181,94 @@ void change_directory(char* path)
     if (tmp) free(tmp);
 }
 
-void set_status(size_t new_status, size_t signal)
-{
-    STATUS = new_status;
-    SIGNAL = signal;
-}
-
 void print_status()
 {
-    char* descriptor;
-    if (SIGNAL == 0) {
-        descriptor = "exit value";
-    } else {
-        descriptor = "terminated by signal";
+    char msg[64];
+    sprintf(msg, "%s\n", STATUS_MESSAGE);
+    print_and_flush(msg);
+}
+
+void set_status(char* new_status)
+{
+    memset(STATUS_MESSAGE, 0, 64);
+    memcpy(STATUS_MESSAGE, new_status, strlen(new_status));
+}
+
+void add_to_message_queue(char* message)
+{
+    MESSAGE_QUEUE[NUM_MESSAGES] = malloc(strlen(message));
+    memset(MESSAGE_QUEUE[NUM_MESSAGES], 0, sizeof(MESSAGE_QUEUE[NUM_MESSAGES]));
+    memcpy(MESSAGE_QUEUE[NUM_MESSAGES], message, strlen(message));
+    NUM_MESSAGES = NUM_MESSAGES + 1;
+}
+
+void background_exit(int signum)
+{
+    int stat;
+    pid_t pid;
+
+    while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
+        if (pid == -1)
+            return;
+        else {
+            char message[128];
+            sprintf(message, "background pid %ld is done: signal %d \n", (long)pid, stat);
+            // add to message queue
+            add_to_message_queue(message);
+            // write(STDOUT_FILENO, message, strlen(message));
+        }
     }
-    printf("%s %zd\n", descriptor, STATUS);
+}
+
+void redirect_input(struct Command* cmd, size_t* error_flag)
+{
+    /* open file */
+    FILE* fd = fopen(cmd->input_file, "r");
+
+    if (fd == NULL) {
+        /* file does not exist */
+       char msg[64];
+        sprintf(msg, "cannot open %s for input\n", cmd->input_file);
+        print_and_flush(msg);
+        set_status("exit value 1");  // set shell exit status
+        /* set error_flag so command does not exec */
+        *error_flag = 1;
+        return;
+    }
+    dup2(fileno(fd), STDIN_FILENO);
+    fclose(fd);
+}
+
+void redirect_output(struct Command* cmd, size_t* error_flag)
+{
+    FILE* fd = fopen(cmd->output_file, "w");
+    if (fd == NULL) {
+        /* file does not exist */
+        char msg[64];
+        sprintf(msg, "cannot open %s for output\n", cmd->output_file);
+        print_and_flush(msg);
+        set_status("exit value 1");  // set shell exit status
+        /* set error_flag so command does not exec */
+        *error_flag = 1;
+        return;
+    }
+    dup2(fileno(fd), STDOUT_FILENO);
+    fclose(fd);
+}
+
+void wait_foreground_command(pid_t pid)
+{
+    int status;
+    size_t exit_value;
+    char status_message[64];
+
+    waitpid(pid, &status, 0);
+    exit_value = WEXITSTATUS(status);
+
+    /* set status */
+    sprintf(status_message, "exit value %zd", exit_value);
+    set_status(status_message);
+
 }
 
 void command_execute(struct Command* cmd)
@@ -204,34 +287,47 @@ void command_execute(struct Command* cmd)
             //int status;
             //waitpid(pid, &status, 0);
             //printf("%d\n", status);
+            // printf("%zd", cmd->background);
         } else {
             // child process
-            // handle i/o redirect
+            size_t error_flag = 0;
             if (cmd->redirect == -1) {
-                // input
-                FILE* fd = fopen(cmd->input_file, "r");
-                dup2(fileno(fd), STDIN_FILENO);
-                fclose(fd);
+                redirect_input(cmd, &error_flag);
             } else if (cmd->redirect == 1) {
-                // output
-                FILE* fd1 = fopen(cmd->output_file, "a");
-                dup2(fileno(fd1), STDOUT_FILENO);
-                fclose(fd1);
+                redirect_output(cmd, &error_flag);
             }
 
             // handle background processes
+            if (cmd->background == 1) {
+                //printf("%ld", (long)pid);
+                BACKGROUND_PROCESSES[NUM_PROCESSES] = pid;
+                NUM_PROCESSES = NUM_PROCESSES + 1;
+            }
 
-            execvp(cmd->command, cmd->args);
+            if (error_flag == 0) {
+                if (execvp(cmd->command, cmd->args) == -1) {
+                    char msg[64];
+                    sprintf(msg, "%s: no such file or directory\n", cmd->command);
+                    print_and_flush(msg);
+                    set_status("exit value 1");
+                    return;
+                }
+            }
 
             // exit status ?
             _exit(EXIT_FAILURE);
         }
         if (cmd->background == 0) {
             int stat;
+            char status[32];
             waitpid(pid, &stat, 0);
+            STATUS = WEXITSTATUS(stat);
+
+            /* set status */
+            sprintf(status, "exit value %zd", STATUS);
+            set_status(status);
         } else {
-            BACKGROUND_PROCESSES[NUM_PROCESSES] = pid;
-            NUM_PROCESSES = NUM_PROCESSES + 1;
+            printf("background pid is %ld\n", (long)pid);
         }
     }
 }
@@ -243,6 +339,11 @@ int main(int argc, char *argv[])
     struct Command* current_command;
 
     exit_flag = 0;
+
+    struct sigaction act;
+    act.sa_handler = background_exit;
+    act.sa_flags = SA_NODEFER;
+    sigaction(SIGCHLD, &act, NULL);
 
     do {
         get_input(command, COMMAND_LENGTH);
@@ -262,10 +363,6 @@ int main(int argc, char *argv[])
     } while (exit_flag == 0);
 
     /* kill any other processes or jobs */
-    int counter;
-    for (counter = 0; counter < NUM_PROCESSES; counter++) {
-        printf("%zd\t", BACKGROUND_PROCESSES[NUM_PROCESSES]);
-    }
 
     exit(0);
 }
