@@ -4,3 +4,5 @@
 #gcc -o otp_dec_d otp_dec_d.c
 #gcc -o otp_dec otp_dec.c
 gcc -o keygen keygen.c
+gcc -c server.c
+gcc server.o -o server_tester server_test.c

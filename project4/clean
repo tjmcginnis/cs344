@@ -1,3 +1,5 @@
 #!/bin/bash
 rm -f keygen
 rm -f mykey
+rm -f server.o
+rm -f server_tester
