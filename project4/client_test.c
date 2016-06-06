@@ -12,6 +12,7 @@
 int main(int argc, char* argv[])
 {
     int sockfd, portno;
+    char* message;
 
     if (argc < 2) {
         perror("port");
@@ -26,4 +27,9 @@ int main(int argc, char* argv[])
     }
 
     make_connection(&sockfd, portno);
+
+    message = "Testing... does this work\n";
+    send_text(&sockfd, message);
+
+    close(sockfd);
 }

@@ -12,6 +12,7 @@ int main(int argc, char* argv[])
 {
     int sockfd, newsockfd, portno;
     struct sockaddr_in serv_addr, cli_addr;
+    char buffer[1000];
 
     if (argc < 2) {
         perror("port");
@@ -34,7 +35,12 @@ int main(int argc, char* argv[])
 
     while (1) {
         accept_new_connection(&sockfd, &newsockfd, &cli_addr);
+        receive_text(&newsockfd, buffer, 1000);
+        printf("Message: %s\n", buffer);
     }
+
+    close(newsockfd);
+    close(sockfd);
 
     return 0;
 }

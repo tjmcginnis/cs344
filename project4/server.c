@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -29,5 +30,17 @@ void accept_new_connection(int* sockfd,
     printf("Connection accepted from client\n");
 }
 
-void receive_text() {}
+int receive_text(int* client_sockfd, char* buffer, int buffer_size)
+{
+    int n;
+
+    bzero(buffer, buffer_size);
+    n = read(*client_sockfd, buffer, buffer_size);
+    if (n < 0) {
+        perror("read");
+    }
+
+    return n;
+}
+
 void send_text() {}

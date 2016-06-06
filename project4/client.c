@@ -27,6 +27,18 @@ void make_connection(int* sockfd, int portno)
     }
 }
 
-void send_text();
+int send_text(int* sockfd, char* message)
+{
+    int n;
+
+    n = write(*sockfd, message, strlen(message));
+    if (n < 0) {
+        perror("write");
+        exit(1);
+    }
+
+    return n;
+}
+
 void receive_text();
 void write_text();
