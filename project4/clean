@@ -3,3 +3,5 @@ rm -f keygen
 rm -f mykey
 rm -f server.o
 rm -f server_tester
+rm -f client.o
+rm -f client_tester

@@ -6,3 +6,5 @@
 gcc -o keygen keygen.c
 gcc -c server.c
 gcc server.o -o server_tester server_test.c
+gcc -c client.c
+gcc client.o -o client_tester client_test.c
