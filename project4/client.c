@@ -1,3 +1,11 @@
+/*
+ * Author: Tyler McGinnis
+ * CS344
+ * Program 4
+ *
+ * File: client.c
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,38 +15,31 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
-void make_connection(int* sockfd, int portno)
+/*
+ * makes a connection to server named host on port number portno
+ */
+int make_connection(int* sockfd, const char* host, int portno)
 {
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
-    server = gethostbyname("localhost");
+    /* look up server identified by host */
+    server = gethostbyname(host);
     if (server == NULL) {
         perror("no such server");
         exit(1);
     }
+
+    /* built up serv_addr */
     bzero((char*) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     bcopy((char*) server->h_addr, (char*) &serv_addr.sin_addr.s_addr, server->h_length);
     serv_addr.sin_port = htons(portno);
+
+    /* attempt to connect, return 1 if unsuccessful */
     if (connect(*sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        perror("error connecting");
-        exit(1);
-    }
-}
-
-int send_text(int* sockfd, char* message)
-{
-    int n;
-
-    n = write(*sockfd, message, strlen(message));
-    if (n < 0) {
-        perror("write");
-        exit(1);
+        return 1;
     }
 
-    return n;
+    return 0;
 }
-
-void receive_text();
-void write_text();

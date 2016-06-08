@@ -1,9 +1,18 @@
+/*
+ * Author: Tyler McGinnis
+ * CS344
+ * Program 4
+ *
+ * File: client.h
+ */
+
+
 #ifndef CLIENT_H
 #define CLIENT_H
 
-void make_connection(int* sockfd, int portno);
-int send_text(int* sockfd, char* message);
-void receive_text();
-void write_text();
+/*
+ * makes a connection to server named host on port number portno
+ */
+int make_connection(int* sockfd, const char* host, int portno);
 
-#endif
+#endif  // CLIENT_H
